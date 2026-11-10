@@ -1,0 +1,30 @@
+node_modules/
+frontend/dist/
+studio-data/
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.aismith-runtime-dir
+.env.*
+!.env.example
+vendor/trellis.cpp/*.dll
+vendor/trellis.cpp/*.exe
+# trellis2cpp build output (compiled binaries, never commit these)
+vendor/trellis2cpp/build/
+vendor/trellis2cpp/ggufs/
+.git-vendored-source/
+vendor/ComfyUI-SkinTokens/
+vendor/mesh2motion-assets/
+
+# open-source audit 2026-09-01: not-ignored hazards
+vendor/trellis.cpp/
+.venv
+*.egg-info/
+*.tsbuildinfo
+
+# comfy native 3d trial: large local ComfyUI dumps, not for commit
+/comfy_template_3d.json
+/comfy_object_info.json
+# UniRig runtime installed by scripts/setup_unirig.sh
+vendor/unirig/

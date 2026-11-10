@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Animate rigged character</title>
+  </head>
+  <body style="margin:0">
+    <script type="module" src="/src/mesh2motion/retarget-entry.js"></script>
+    <nav style="display:none"><div id="top-nav-links-mount"></div></nav>
+    <div id="header-ui-mount"></div>
+    <div id="tool-panel">
+      <span id="bone-mapping-step">
+        <h1>Prepare animation library</h1>
+        <p>Loading the selected character rig and validating its skeleton.</p>
+        <div style="display:flex;gap:1rem">
+          <div class="bone-map-section">
+            <h2 class="bone-map-heading">Animation skeleton</h2>
+            <div class="bone-map-content">
+              <select id="skeleton-type-select" class="button"></select>
+              <div><input id="source-bones-filter" placeholder="Filter source bones" /><span id="source-bone-count">0</span> bones</div>
+              <div id="source-bones-list"></div>
+            </div>
+          </div>
+          <div class="bone-map-section">
+            <h2 class="bone-map-heading">Selected character</h2>
+            <div class="bone-map-content">
+              <div id="target-model-load-status" role="status">Downloading and validating the selected character…</div>
+              <input type="file" id="upload-file" accept=".glb" hidden />
+              <label for="upload-file" class="button" id="load-model-button">Choose another rig</label>
+              <button id="auto-map-button" class="secondary-button" style="display:none">Auto-map</button>
+              <button id="clear-mappings-button" class="secondary-button" style="display:none">Clear mappings</button>
+              <span id="view-bone-tree-button" style="display:none">View bone tree</span>
+              <span id="auto-bone-map-match" style="display:none"></span>
+              <span id="target-bones-list-container">
+                <div><input id="target-bones-filter" placeholder="Filter target bones" /><span id="target-bone-count">0</span> bones</div>
+                <div id="target-bones-list"></div>
+              </span>
+              <span id="no-bone-mapping-needed-message" style="display:none">Compatible Mesh2Motion skeleton detected.</span>
+            </div>
+          </div>
+        </div>
+        <button id="continue-to-listing-button" disabled>Open animation library</button>
+        <span id="continue-button-tooltip">Map the skeleton before continuing.</span>
+      </span>
+      <span id="skinned-step-animation-export-options" style="display:none">
+        <div id="animations-listing">
+          <div class="pill-switch-group">
+            <div class="pill-switch">
+              <input type="radio" id="animation-view-library" name="animation-view-mode" value="library" checked />
+              <label for="animation-view-library">Library</label>
+              <input type="radio" id="animation-view-selected" name="animation-view-mode" value="selected" />
+              <label for="animation-view-selected">Selected</label>
+            </div>
+          </div>
+          <input id="animation-filter" placeholder="Filter animations" />
+          <button id="toggle-select-all-animations" class="secondary-button">Select all</button>
+          <span id="animation-listing-count">0 animations</span>
+          <div id="animation-progress-loader-container" style="display:none">
+            <div id="loading-status-text"></div><div id="loading-progress-bar"></div><div id="current-file-progress-bar"></div>
+          </div>
+          <div id="animations-items"></div>
+          <button class="no-style-button" id="back_to_bone_map_button">‹ Back</button>
+          <button id="export-retargeting-button">Save <span id="animation-selection-count">0</span> animations</button>
+          <a id="download-hidden-link" href="#" hidden></a>
+        </div>
+      </span>
+    </div>
+    <div id="animation-player-mount"></div>
+    <div id="view-control-hitbox"></div>
+  </body>
+</html>

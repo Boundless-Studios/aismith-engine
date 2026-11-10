@@ -1,0 +1,2021 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>trellis2.cpp — image to 3D mesh</title>
+<script>
+  if (location.pathname === "/showcase") {
+    document.documentElement.classList.add("showcase-only");
+    document.title = "trellis2.cpp — showcase";
+  }
+</script>
+<style>
+  :root {
+    --bg: #101418; --panel: #1a2027; --edge: #2a333d;
+    --text: #d7dee6; --dim: #8b98a5; --accent: #4da3ff; --err: #ff6b6b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, sans-serif;
+    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+  }
+  header {
+    padding: 10px 16px; border-bottom: 1px solid var(--edge);
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header .sub { color: var(--dim); font-size: 12px; }
+  main { flex: 1; display: flex; min-height: 0; }
+  #side {
+    width: 300px; min-width: 300px; border-right: 1px solid var(--edge);
+    padding: 14px; display: flex; flex-direction: column; gap: 12px;
+    overflow-y: auto; background: var(--panel);
+  }
+  #drop {
+    border: 2px dashed var(--edge); border-radius: 10px; padding: 14px;
+    text-align: center; color: var(--dim); cursor: pointer;
+    transition: border-color .15s;
+  }
+  #drop.hover, #drop:hover { border-color: var(--accent); }
+  #drop img {
+    max-width: 100%; max-height: 180px; border-radius: 6px;
+    background-color: #d8d8d8;
+    background-image: linear-gradient(45deg,#aaa 25%,transparent 25%),
+                      linear-gradient(-45deg,#aaa 25%,transparent 25%),
+                      linear-gradient(45deg,transparent 75%,#aaa 75%),
+                      linear-gradient(-45deg,transparent 75%,#aaa 75%);
+    background-size: 16px 16px; background-position: 0 0,0 8px,8px -8px,-8px 0;
+  }
+  label { color: var(--dim); font-size: 12px; display: block; margin-bottom: 3px; }
+  input[type=number] {
+    width: 100%; background: var(--bg); color: var(--text);
+    border: 1px solid var(--edge); border-radius: 6px; padding: 6px 8px;
+  }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; }
+  button {
+    background: var(--accent); color: #06121f; border: 0; border-radius: 8px;
+    padding: 10px; font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  button:disabled { opacity: .45; cursor: default; }
+  #status { font-size: 13px; color: var(--dim); min-height: 34px; }
+  #status.error { color: var(--err); }
+  .idle-option {
+    display: flex; align-items: center; gap: 7px; margin: -2px 0 0;
+    color: var(--dim); cursor: pointer; user-select: none;
+  }
+  .idle-option input { accent-color: var(--accent); }
+  #bar { height: 6px; background: var(--edge); border-radius: 3px; overflow: hidden; display: none; }
+  #bar > div { height: 100%; width: 0%; background: var(--accent); transition: width .3s; }
+  #meshinfo { font-size: 12px; color: var(--dim); }
+  #exportpanel {
+    border-top: 1px solid var(--edge); padding-top: 10px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  #exportpanel select {
+    width: 100%; background: var(--bg); color: var(--text);
+    border: 1px solid var(--edge); border-radius: 6px; padding: 6px 8px;
+  }
+  .export-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .export-actions button { padding: 8px 6px; font-size: 12px; }
+  #exportinfo { min-height: 17px; font-size: 11px; color: var(--dim); }
+  #view { flex: 1; position: relative; min-width: 0; }
+  canvas#gl { width: 100%; height: 100%; display: block; }
+  #hint {
+    position: absolute; bottom: 10px; left: 12px; color: var(--dim);
+    font-size: 12px; pointer-events: none;
+  }
+  #timeline {
+    position: absolute; left: 12px; right: 12px; bottom: 10px;
+    display: none; align-items: center; gap: 10px;
+    background: rgba(16,20,24,.72); border: 1px solid var(--edge);
+    border-radius: 8px; padding: 7px 12px; backdrop-filter: blur(4px);
+  }
+  #timeline input[type=range] { flex: 1; accent-color: var(--accent); min-width: 0; }
+  #tlplay {
+    background: var(--bg); color: var(--text); border: 1px solid var(--edge);
+    border-radius: 6px; width: 30px; height: 26px; cursor: pointer; flex: none;
+  }
+  #tllabel {
+    font-size: 12px; color: var(--dim); flex: none;
+    min-width: 132px; text-align: right; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .toggles { display: flex; gap: 8px; }
+  .toggles button {
+    flex: 1; background: var(--bg); color: var(--dim);
+    border: 1px solid var(--edge); font-weight: 500; padding: 7px;
+  }
+  .toggles button.on { color: var(--accent); border-color: var(--accent); }
+  #histhead { display: flex; align-items: center; justify-content: space-between; }
+  #histactions { display: flex; align-items: center; gap: 4px; }
+  #showcasebtn, #histclear {
+    width: auto; background: none; border: 0; color: var(--dim);
+    font-size: 11px; font-weight: 500; padding: 2px 4px; cursor: pointer;
+  }
+  #showcasebtn:hover { color: var(--accent); }
+  #histclear:hover { color: var(--err); }
+  #hist { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .hitem {
+    position: relative; aspect-ratio: 1; border: 1px solid var(--edge);
+    border-radius: 6px; overflow: hidden; cursor: pointer; background: var(--bg);
+  }
+  .hitem.active { border-color: var(--accent); }
+  .hitem img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .hitem .q {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 1px 0;
+    background: rgba(0,0,0,.55); color: #fff; font-size: 9px; text-align: center;
+  }
+  .hitem .x {
+    position: absolute; top: 1px; right: 1px; width: 15px; height: 15px;
+    line-height: 14px; text-align: center; font-size: 12px; color: #fff;
+    background: rgba(0,0,0,.5); border-radius: 50%; opacity: 0; transition: opacity .1s;
+  }
+  .hitem:hover .x { opacity: 1; }
+  .hitem .x:hover { background: var(--err); }
+  #showcasehud {
+    position: absolute; top: 12px; right: 12px; display: none;
+    align-items: center; gap: 10px; max-width: calc(100% - 24px);
+    background: rgba(16,20,24,.82); border: 1px solid var(--edge);
+    border-radius: 8px; padding: 7px 9px 7px 12px; backdrop-filter: blur(4px);
+  }
+  #showcaselabel {
+    color: var(--text); font-size: 12px; min-width: 260px; text-align: right;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+  }
+  #showcasestop {
+    width: auto; padding: 4px 8px; background: var(--bg); color: var(--dim);
+    border: 1px solid var(--edge); border-radius: 6px; font-size: 11px;
+  }
+  #showcasesource {
+    display: none; position: fixed; z-index: 20; object-fit: contain;
+    left: 50%; top: 50%; width: min(82vw, 1080px); height: 78vh;
+    transform: translate(-50%, -50%); opacity: 0;
+    border-radius: 14px; background: rgba(8, 10, 13, .8);
+    box-shadow: 0 24px 90px rgba(0, 0, 0, .7);
+    transition: left 1.2s cubic-bezier(.4,0,.2,1),
+                top 1.2s cubic-bezier(.4,0,.2,1),
+                width 1.2s cubic-bezier(.4,0,.2,1),
+                height 1.2s cubic-bezier(.4,0,.2,1),
+                transform 1.2s cubic-bezier(.4,0,.2,1),
+                opacity .35s ease;
+    pointer-events: none;
+  }
+  #showcaseempty {
+    display: none; position: absolute; inset: 0; z-index: 12;
+    place-items: center; color: var(--dim); font-size: 16px;
+    text-align: center; padding: 24px;
+  }
+  html.showcase-only header,
+  html.showcase-only #side,
+  html.showcase-only #hint,
+  html.showcase-only #timeline { display: none !important; }
+  html.showcase-only main { height: 100vh; width: 100vw; }
+  html.showcase-only #view { width: 100vw; height: 100vh; flex: none; }
+  html.showcase-only #showcasehud {
+    top: auto; right: auto; left: 18px; bottom: 18px;
+    max-width: calc(100% - 36px); padding: 8px 12px;
+    border-color: rgba(255,255,255,.08); border-radius: 12px;
+    background: rgba(10,13,17,.68); pointer-events: none;
+  }
+  html.showcase-only #showcaselabel { min-width: 0; text-align: left; }
+  html.showcase-only #showcasestop { display: none; }
+  html.showcase-only #showcasesource { display: block; }
+  html.showcase-only #showcasesource.visible { opacity: 1; }
+  html.showcase-only #showcasesource.corner {
+    left: calc(100% - 24px); top: 24px; width: min(24vw, 300px); height: 24vh;
+    transform: translate(-100%, 0);
+    border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.55);
+  }
+  html.showcase-only #showcaseempty.visible { display: grid; }
+  footer { font-size: 11px; color: var(--dim); }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>trellis2.cpp</h1>
+  <span class="sub">image &rarr; 3D mesh &middot; TRELLIS.2 stage-1 geometry &middot; pure C++/ggml &middot; backend: <span id="backend">…</span></span>
+</header>
+<main>
+  <div id="side">
+    <div id="drop" tabindex="0">
+      <span id="droptext">drop an image here or click to choose<br>
+      <small>transparent, black, and white backgrounds supported</small></span>
+    </div>
+    <input id="file" type="file" accept="image/*" hidden>
+    <div>
+      <label for="quality">quality</label>
+      <select id="quality" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--edge);border-radius:6px;padding:6px 8px"></select>
+    </div>
+    <div>
+      <label for="background">background</label>
+      <select id="background" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--edge);border-radius:6px;padding:6px 8px">
+        <option value="auto" selected>auto-remove black or white</option>
+        <option value="keep">keep original</option>
+        <option value="black">remove black</option>
+        <option value="white">remove white</option>
+      </select>
+    </div>
+    <div class="row">
+      <div><label for="seed">seed</label><input id="seed" type="number" value="42" min="0"></div>
+      <div><label for="steps">shape steps</label><input id="steps" type="number" value="12" min="1" max="50"></div>
+      <div><label for="texsteps">material steps</label><input id="texsteps" type="number" value="12" min="1" max="50"></div>
+      <div><label for="guidance">guidance</label><input id="guidance" type="number" value="7.5" step="0.5" min="0" max="20"></div>
+    </div>
+    <button id="go" disabled>Generate 3D mesh</button>
+    <label class="idle-option" for="unloadidle"
+           title="release model VRAM between generations; the next generation reloads the models">
+      <input id="unloadidle" type="checkbox">
+      <span>free VRAM when idle</span>
+    </label>
+    <div id="bar"><div></div></div>
+    <div id="status">waiting for an image</div>
+    <div id="meshinfo"></div>
+    <div id="exportpanel">
+      <label style="margin:0">asset export</label>
+      <div class="row">
+        <div>
+          <label for="exportcomponents">component cleanup</label>
+          <select id="exportcomponents">
+            <option value="all" selected>keep all components</option>
+            <option value="tiny">remove tiny fragments</option>
+            <option value="largest">keep largest connected piece only</option>
+          </select>
+        </div>
+      </div>
+      <label class="idle-option" for="printwrap" id="printwraplabel"
+             title="rebuild as a watertight, intersection-free 2-manifold using CGAL Alpha Wrap">
+        <input id="printwrap" type="checkbox" checked disabled>
+        <span>watertight print wrap (CGAL)</span>
+      </label>
+      <div class="row" id="printwrapsettings" hidden>
+        <div style="flex:1 1 100%">
+          <label for="wrapdetail" title="higher = finer detail: sharper surface, more triangles, slower. The wrap offset is derived automatically (~detail/30).">detail <output id="wrapdetailval" style="opacity:.7"></output></label>
+          <input id="wrapdetail" type="range" min="0" max="100" value="82" step="1" style="width:100%">
+          <div style="display:flex;justify-content:space-between;opacity:.55;font-size:.85em">
+            <span>coarser · faster</span><span>finer · slower</span>
+          </div>
+        </div>
+        <div>
+          <label for="wraptex" title="resolution of the rebaked PBR texture maps">texture atlas</label>
+          <select id="wraptex">
+            <option value="1024">1024²</option>
+            <option value="2048" selected>2048²</option>
+            <option value="4096">4096²</option>
+          </select>
+        </div>
+      </div>
+      <button id="regen" disabled title="run TRELLIS again from the full-resolution image saved on the server">regenerate from saved image</button>
+      <div class="export-actions">
+        <button id="pexport" disabled>preview export</button>
+        <button id="dglb" disabled>download GLB</button>
+      </div>
+      <div id="exportinfo">generate or open a mesh to enable export</div>
+    </div>
+    <div class="toggles">
+      <button id="twire">wireframe</button>
+      <button id="tspin" class="on">auto-rotate</button>
+      <button id="tsteps" aria-pressed="false"
+              title="record the shape forming; adds CPU decodes between GPU inference steps">live steps: off</button>
+      <button id="tkf" title="also record coarse mesh keyframes of the shape stage forming (slower)">keyframes</button>
+    </div>
+    <div id="histwrap" style="display:none">
+      <div id="histhead">
+        <label style="margin:0">past generations</label>
+        <div id="histactions">
+          <button id="showcasebtn" title="open the full-screen showcase at /showcase">showcase</button>
+          <button id="histclear" title="delete all saved generations from the server">clear</button>
+        </div>
+      </div>
+      <div id="hist"></div>
+    </div>
+    <footer><em>live steps</em> records each stage in 3D as it computes — the
+    sparse structure emerging as 64&sup3; voxels, then the final dual-grid mesh —
+    and a scrubber lets you replay the whole generation. <em>keyframes</em> adds
+    coarse meshes of the shape stage forming (a few extra decodes, slower). Turn
+    <em>live steps</em> off for the fastest run. <em>showcase</em> opens a separate
+    full-screen presentation at <code>/showcase</code>.</footer>
+  </div>
+  <div id="view">
+    <canvas id="gl"></canvas>
+    <img id="showcasesource" alt="generation source image">
+    <div id="showcaseempty">No saved generations yet.<br>Generate an asset from the main page first.</div>
+    <div id="showcasehud">
+      <span id="showcaselabel"></span>
+      <button id="showcasestop">stop</button>
+    </div>
+    <div id="hint">drag: rotate (trackball) &middot; wheel: zoom &middot; right-drag / shift-drag: pan &middot; double-click: reset view</div>
+    <div id="timeline">
+      <button id="tlplay" title="play the generation back">&#9654;</button>
+      <input id="tlrange" type="range" min="0" max="0" value="0" step="1"
+             title="scrub through the recorded generation stages">
+      <span id="tllabel"></span>
+    </div>
+  </div>
+</main>
+<script>
+"use strict";
+
+/* ── upload / job flow ──────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const showcasePage = document.documentElement.classList.contains("showcase-only");
+let imageBlob = null;
+let stepsOn = false;  // preview decoding is deliberately opt-in: it stalls GPU inference
+
+let kfOn = false;     // also record coarse mesh keyframes during the shape stage (opt-in, slower)
+$("tsteps").addEventListener("click", () => {
+  setLiveSteps(!stepsOn);
+});
+function setLiveSteps(enabled) {
+  stepsOn = enabled;
+  $("tsteps").classList.toggle("on", enabled);
+  $("tsteps").textContent = `live steps: ${enabled ? "on" : "off"}`;
+  $("tsteps").setAttribute("aria-pressed", String(enabled));
+  if (!enabled) {
+    kfOn = false;
+    $("tkf").classList.remove("on");
+  }
+  $("tkf").disabled = !enabled;
+}
+setLiveSteps(false);
+$("tkf").addEventListener("click", () => {
+  kfOn = !kfOn;
+  $("tkf").classList.toggle("on", kfOn);
+});
+
+const QUALITY_LABELS = {
+  coarse: "coarse preview (64³, fast)",
+  "512":  "512³ fine",
+  "1024": "1024³ cascade (high detail, slow)",
+};
+let backendName = "";
+function applyRuntimeInfo(i) {
+  backendName = i.backend || backendName;
+  $("backend").textContent = backendName
+    + (i.models_loaded === false ? " · models unloaded" : "");
+  $("unloadidle").checked = !!i.unload_idle;
+  const hasPrintWrap = !!i.print_remesh;
+  $("printwrap").disabled = !hasPrintWrap;
+  $("printwraplabel").title = hasPrintWrap
+    ? "rebuild as a watertight, intersection-free 2-manifold using CGAL Alpha Wrap"
+    : "unavailable: rebuild libtrellis2 with CGAL 5.5 or newer";
+  if (!hasPrintWrap) {
+    $("printwrap").checked = false;   // no CGAL: force off regardless of the default
+  }
+  // Watertight wrap defaults on; reveal its detail slider to match the checkbox.
+  $("printwrapsettings").hidden = !($("printwrap").checked && hasPrintWrap);
+}
+async function refreshRuntimeInfo() {
+  const r = await fetch("/api/info");
+  if (!r.ok) throw new Error(await r.text());
+  const i = await r.json();
+  applyRuntimeInfo(i);
+  return i;
+}
+fetch("/api/info").then(r => r.json())
+  .then(i => {
+    applyRuntimeInfo(i);
+    const sel = $("quality");
+    (i.qualities || ["coarse"]).forEach(q => {
+      const o = document.createElement("option");
+      o.value = q; o.textContent = QUALITY_LABELS[q] || q;
+      if (q === i.best) o.selected = true;
+      sel.appendChild(o);
+    });
+    $("texsteps").disabled = !i.textured;
+  })
+  .catch(() => { $("backend").textContent = "?"; });
+
+$("unloadidle").addEventListener("change", async () => {
+  const cb = $("unloadidle"), enabled = cb.checked;
+  cb.disabled = true;
+  try {
+    const body = new URLSearchParams({ unload_idle: enabled ? "1" : "0" });
+    const r = await fetch("/api/settings", { method: "POST", body });
+    if (!r.ok) throw new Error(await r.text());
+    const i = await r.json();
+    applyRuntimeInfo(i);
+    if (!i.models_loaded)
+      setStatus("models unloaded · the next generation will reload them");
+    else if (i.unload_idle && i.generation_active)
+      setStatus("models will unload when generation finishes");
+    else
+      setStatus(i.unload_idle ? "models will unload when idle" : "models will remain loaded");
+  } catch (e) {
+    cb.checked = !enabled;
+    setStatus("could not change VRAM policy: " + e.message, true);
+  } finally {
+    cb.disabled = false;
+  }
+});
+
+function setStatus(msg, isErr) {
+  $("status").textContent = msg;
+  $("status").className = isErr ? "error" : "";
+}
+
+// Deterministic solid-background cleanup. Auto mode trusts a meaningful
+// existing alpha mask; otherwise it detects a mostly black/white border and
+// flood-fills only colour-similar pixels connected to that border. This avoids
+// deleting enclosed black/white details in the subject. Alpha is feathered
+// across the last 60 colour levels to avoid a hard fringe.
+function removeSolidBackground(image, requested) {
+  const data = image.data, w = image.width, h = image.height, n = w * h;
+  if (requested === "keep") return { mode: "keep", changed: 0 };
+  let mode = requested;
+  if (mode === "auto") {
+    let translucent = 0;
+    for (let i = 0; i < n; i++) if (data[i * 4 + 3] < 250) translucent++;
+    if (translucent > Math.max(4, Math.floor(n / 100)))
+      return { mode: "alpha", changed: 0 };
+
+    let border = 0, dark = 0, light = 0;
+    const sample = (x, y) => {
+      const i = (y * w + x) * 4, r = data[i], g = data[i+1], b = data[i+2];
+      border++; if (Math.max(r, g, b) <= 80) dark++; if (Math.min(r, g, b) >= 175) light++;
+    };
+    for (let x = 0; x < w; x++) { sample(x, 0); if (h > 1) sample(x, h - 1); }
+    for (let y = 1; y + 1 < h; y++) { sample(0, y); if (w > 1) sample(w - 1, y); }
+    let dc = 0, lc = 0;
+    for (const [x, y] of [[0,0],[w-1,0],[0,h-1],[w-1,h-1]]) {
+      const i = (y * w + x) * 4, r = data[i], g = data[i+1], b = data[i+2];
+      if (Math.max(r, g, b) <= 80) dc++; if (Math.min(r, g, b) >= 175) lc++;
+    }
+    const isDark = dark / border >= .55 || dc >= 3;
+    const isLight = light / border >= .55 || lc >= 3;
+    if (!isDark && !isLight) return { mode: "none", changed: 0 };
+    mode = isDark && (!isLight || dark >= light) ? "black" : "white";
+  }
+
+  const distance = i => {
+    const o = i * 4, r = data[o], g = data[o+1], b = data[o+2];
+    return mode === "black" ? Math.max(r, g, b) : 255 - Math.min(r, g, b);
+  };
+  const seen = new Uint8Array(n), queue = new Int32Array(n);
+  let head = 0, tail = 0;
+  const visit = i => {
+    if (!seen[i] && distance(i) <= 80) { seen[i] = 1; queue[tail++] = i; }
+  };
+  for (let x = 0; x < w; x++) { visit(x); if (h > 1) visit((h - 1) * w + x); }
+  for (let y = 1; y + 1 < h; y++) { visit(y * w); if (w > 1) visit(y * w + w - 1); }
+
+  let changed = 0;
+  while (head < tail) {
+    const i = queue[head++], d = distance(i), o = i * 4;
+    let t = Math.max(0, Math.min(1, (d - 12) / 60));
+    t = t * t * (3 - 2 * t);
+    const a = Math.round(data[o+3] * t);
+    if (a !== data[o+3]) { data[o+3] = a; changed++; }
+    const x = i % w, y = Math.floor(i / w);
+    if (x > 0) visit(i - 1); if (x + 1 < w) visit(i + 1);
+    if (y > 0) visit(i - w); if (y + 1 < h) visit(i + w);
+  }
+  return { mode, changed };
+}
+
+// Re-encode whatever the browser can decode as PNG (keeps/adds alpha and
+// guarantees the server-side stb decoder understands WebP/AVIF inputs).
+async function toPNG(file, backgroundMode) {
+  const bmp = await createImageBitmap(file);
+  const cv = document.createElement("canvas");
+  cv.width = bmp.width; cv.height = bmp.height;
+  const ctx = cv.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(bmp, 0, 0); bmp.close();
+  const pixels = ctx.getImageData(0, 0, cv.width, cv.height);
+  const cleanup = removeSolidBackground(pixels, backgroundMode);
+  if (cleanup.changed) ctx.putImageData(pixels, 0, 0);
+  const blob = await new Promise((res, rej) => cv.toBlob(
+    b => b ? res(b) : rej(new Error("PNG encoding failed")), "image/png"));
+  return { blob, cleanup };
+}
+
+let sourceImageFile = null, imageObjectURL = "", imageLoadSeq = 0;
+async function setImage(file) {
+  if (!file || !file.type.startsWith("image/")) return;
+  sourceImageFile = file;
+  const seq = ++imageLoadSeq;
+  let cleanup;
+  try {
+    const converted = await toPNG(file, $("background").value);
+    if (seq !== imageLoadSeq) return;
+    imageBlob = converted.blob; cleanup = converted.cleanup;
+  } catch (e) {
+    setStatus("could not decode that image: " + e.message, true);
+    return;
+  }
+  if (imageObjectURL) URL.revokeObjectURL(imageObjectURL);
+  const url = URL.createObjectURL(imageBlob);
+  imageObjectURL = url;
+  $("droptext").innerHTML = "";
+  let img = $("drop").querySelector("img");
+  if (!img) { img = document.createElement("img"); $("drop").appendChild(img); }
+  img.src = url;
+  $("go").disabled = false;
+  if (cleanup.changed)
+    setStatus(`ready · ${cleanup.mode} background made transparent`);
+  else if (cleanup.mode === "alpha") setStatus("ready · existing transparency preserved");
+  else if (cleanup.mode === "none") setStatus("ready · no black/white background detected");
+  else setStatus("ready");
+}
+
+$("background").addEventListener("change", () => {
+  if (sourceImageFile) setImage(sourceImageFile);
+});
+
+$("drop").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", e => setImage(e.target.files[0]));
+$("drop").addEventListener("dragover", e => { e.preventDefault(); $("drop").classList.add("hover"); });
+$("drop").addEventListener("dragleave", () => $("drop").classList.remove("hover"));
+$("drop").addEventListener("drop", e => {
+  e.preventDefault(); $("drop").classList.remove("hover");
+  setImage(e.dataTransfer.files[0]);
+});
+document.addEventListener("paste", e => {
+  for (const item of e.clipboardData.items)
+    if (item.type.startsWith("image/")) setImage(item.getAsFile());
+});
+
+$("go").addEventListener("click", async () => {
+  if (!imageBlob) return;
+  stopShowcase(true);
+  $("go").disabled = true;
+  $("bar").style.display = "block";
+  $("bar").firstElementChild.style.width = "2%";
+  setStatus("uploading…");
+
+  // The small thumbnail is persisted with the server-side job manifest; the
+  // browser keeps no asset/history database of its own.
+  const genQuality = $("quality").value;
+  const genThumb = await makeThumb(imageBlob);
+  const fd = new FormData();
+  fd.append("image", imageBlob, "input.png");
+  // Keep the selected file byte-for-byte. The processed PNG above remains the
+  // deterministic inference input; this original is for showcase and reuse.
+  fd.append("source", sourceImageFile, sourceImageFile.name || "source-image");
+  // `imageBlob` already contains the selected browser cleanup. Tell the C++
+  // pipeline to preserve it rather than independently applying auto mode again.
+  fd.append("background", "keep");
+  fd.append("quality", genQuality);
+  fd.append("thumbnail", genThumb);
+  fd.append("seed", $("seed").value);
+  fd.append("steps", $("steps").value);
+  fd.append("texture_steps", $("texsteps").value);
+  fd.append("guidance", $("guidance").value);
+  fd.append("preview", stepsOn ? "1" : "0");
+  fd.append("keyframes", (stepsOn && kfOn) ? "3" : "0");
+
+  viewer.clear();   // blank any prior mesh; previews/mesh will populate the view
+  resetExportState();
+  resetTimeline();  // start a fresh recording for this run
+
+  try {
+    const r = await fetch("/api/generate", { method: "POST", body: fd });
+    if (!r.ok) throw new Error(await r.text());
+    const { job } = await r.json();
+    await poll(job, genThumb, genQuality);
+  } catch (e) {
+    setStatus(e.message, true);
+    $("bar").style.display = "none";
+  }
+  $("go").disabled = false;
+});
+
+async function poll(id, thumb, quality) {
+  // stage weights for a smooth-ish progress bar (coarse/fine/cascade)
+  const stageBase = { "preprocess": 2, "encoding image (DINOv3)": 4,
+                      "sampling sparse structure": 8, "decoding occupancy": 22,
+                      "sampling shape SLAT": 26, "decoding shape": 40,
+                      "upsampling scaffold": 42,
+                      "sampling shape SLAT (1024)": 46, "decoding shape (1024)": 88,
+                      "extracting mesh": 92, "sampling material": 95,
+                      "saving generation": 99 };
+  for (;;) {
+    const r = await fetch("/api/job/" + id);
+    if (!r.ok) throw new Error(await r.text());
+    const j = await r.json();
+    if (j.state === "error") {
+      try { await refreshRuntimeInfo(); } catch (e) { /* informational only */ }
+      throw new Error(j.error);
+    }
+    if (j.state === "done") {
+      $("bar").firstElementChild.style.width = "100%";
+      setStatus("fetching mesh…");
+      await loadMesh(id);
+      addHistory(id, thumb, quality);
+      try { await refreshRuntimeInfo(); } catch (e) { /* informational only */ }
+      const elapsed = j.durationMs ? ` in ${(j.durationMs / 1000).toFixed(1)}s` : "";
+      setStatus(`done${elapsed} · live steps ${j.livePreview ? "on" : "off"}`);
+      setTimeout(() => { $("bar").style.display = "none"; }, 600);
+      return;
+    }
+    if (j.state === "running" && j.stage) {
+      if (backendName && j.stage !== "loading models")
+        $("backend").textContent = backendName;
+      let pct = stageBase[j.stage] ?? 5;
+      if (j.stage === "sampling sparse structure" && j.total > 0)
+        pct = 8 + 14 * (j.step / j.total);
+      if (j.stage === "sampling shape SLAT" && j.total > 0)
+        pct = 26 + 14 * (j.step / j.total);
+      if (j.stage === "sampling shape SLAT (1024)" && j.total > 0)
+        pct = 46 + 42 * (j.step / j.total);
+      if (j.stage === "sampling material" && j.total > 0)
+        pct = 95 + 4 * (j.step / j.total);
+      $("bar").firstElementChild.style.width = pct + "%";
+      setStatus(j.stage + (j.total ? ` (${j.step}/${j.total})` : "") + "…");
+    } else {
+      setStatus("queued…");
+    }
+    // Record every new intermediate frame (the server keeps them all), showing
+    // the newest live. After the run these frames replay through the scrubber.
+    if (stepsOn && j.previewSeq > haveFrames) {
+      const fm = j.frames || [];
+      while (haveFrames < j.previewSeq) {
+        await recordFrame(id, haveFrames, fm);
+        haveFrames++;
+      }
+    }
+    await new Promise(res => setTimeout(res, 500));
+  }
+}
+
+/* ── recorded stage playback (scrubber) ─────────────────────────────────────
+ * The server records every intermediate preview (voxel frames as the sparse
+ * structure condenses, plus any decoded mesh keyframes). We fetch each by index
+ * and keep it, so a finished generation can be scrubbed / played back through
+ * its stages. The final mesh is appended as the last frame. */
+let recordedFrames = [];   // {kind:'voxel',res,coords,meta} | {kind:'mesh',verts,normals,tris,pbr,meta}
+let haveFrames = 0;        // preview seqs fetched so far this run
+let tlTimer = 0;           // setInterval handle while playing back
+
+function resetTimeline() {
+  recordedFrames = []; haveFrames = 0;
+  stopPlayback();
+  $("timeline").style.display = "none";
+  $("tllabel").style.width = "";
+  $("tllabel").textContent = "";
+  $("hint").style.display = "";
+}
+
+// Parse a T2MESH0* blob into typed arrays (shared by keyframes + the final mesh).
+function parseMesh(buf) {
+  const dv = new DataView(buf);
+  const magic = new TextDecoder().decode(new Uint8Array(buf, 0, 8));
+  const textured5 = magic === "T2MESH02"; // legacy base/metal/rough
+  const textured6 = magic === "T2MESH03"; // + alpha
+  const textured = textured5 || textured6;
+  const nv = dv.getUint32(8, true), nt = dv.getUint32(12, true);
+  let off = 16;
+  const verts = new Float32Array(buf, off, nv * 3); off += nv * 12;
+  const normals = new Float32Array(buf, off, nv * 3); off += nv * 12;
+  let pbr = null;
+  if (textured6) {
+    pbr = new Float32Array(buf, off, nv * 6); off += nv * 24;
+  } else if (textured5) {
+    const old = new Float32Array(buf, off, nv * 5); off += nv * 20;
+    pbr = new Float32Array(nv * 6);
+    for (let i = 0; i < nv; i++) {
+      pbr.set(old.subarray(i * 5, i * 5 + 5), i * 6);
+      pbr[i * 6 + 5] = 1.0;
+    }
+  }
+  const tris = new Int32Array(buf, off, nt * 3);
+  return { verts, normals, tris, pbr, nv, nt, textured };
+}
+
+// Fetch recorded frame `seq`, append it, and show it live. Best-effort.
+async function recordFrame(id, seq, framesMeta) {
+  try {
+    const r = await fetch(`/api/preview/${id}?seq=${seq}`);
+    if (!r.ok) return;
+    const buf = await r.arrayBuffer();
+    const magic = new TextDecoder().decode(new Uint8Array(buf, 0, 6));
+    const meta = framesMeta && framesMeta[seq];
+    if (magic === "T2VOX0") {
+      const dv = new DataView(buf);
+      const res = dv.getUint32(8, true), nvox = dv.getUint32(12, true);
+      const coords = new Uint16Array(buf, 16, nvox * 3);
+      recordedFrames.push({ kind: "voxel", res, coords, meta });
+    } else if (magic === "T2MESH") {
+      const m = parseMesh(buf);
+      recordedFrames.push({ kind: "mesh", verts: m.verts, normals: m.normals,
+                            tris: m.tris, pbr: m.pbr, meta });
+    } else return;
+    renderFrame(recordedFrames.length - 1);   // show it as it arrives
+  } catch (e) { /* previews are best-effort */ }
+}
+
+function timelineLabel(f, i, total) {
+  const m = f.meta || {};
+  let s = m.stage || (f.kind === "mesh" ? "mesh" : "voxels");
+  if (m.total) s += ` ${m.step}/${m.total}`;
+  return `${i + 1}/${total} · ${s}`;
+}
+
+// Keep the scrubber length stable while replaying: reserve enough room for the
+// widest status label in this recording instead of letting the flex item grow
+// and shrink as each frame changes the text.
+function sizeTimelineLabel() {
+  const label = $("tllabel"), total = recordedFrames.length;
+  label.style.width = "";
+  let widest = 0;
+  recordedFrames.forEach((f, i) => {
+    label.textContent = timelineLabel(f, i, total);
+    widest = Math.max(widest, label.getBoundingClientRect().width);
+  });
+  label.style.width = Math.ceil(widest) + "px";
+}
+
+// Show a recorded frame in the viewer (camera untouched) and sync the scrubber.
+function renderFrame(i) {
+  const f = recordedFrames[i];
+  if (!f) return;
+  if (previewingExport) {
+    previewingExport = false;
+    $("pexport").textContent = "preview export";
+  }
+  if (f.kind === "voxel") viewer.setVoxels(f.res, f.coords);
+  else viewer.setMesh(f.verts, f.normals, f.tris, f.pbr);
+  const rng = $("tlrange");
+  if (+rng.value !== i) rng.value = i;
+  $("tllabel").textContent = timelineLabel(f, i, recordedFrames.length);
+}
+
+// Canonical stage order so the scrubber plays chronologically regardless of the
+// order frames arrive (mesh keyframes are emitted late, after the final decode).
+const STAGE_RANK = {
+  "preprocess": 0, "encoding image (DINOv3)": 1, "sampling sparse structure": 2,
+  "decoding occupancy": 3, "sampling shape SLAT": 4, "upsampling scaffold": 5,
+  "sampling shape SLAT (1024)": 6, "decoding shape": 7, "decoding shape (1024)": 7,
+  "extracting mesh": 8, "final mesh": 99,
+};
+function frameRank(f) {
+  const m = f.meta || {};
+  return (STAGE_RANK[m.stage] ?? 50) * 1000 + (m.step || 0);
+}
+
+// Reveal the scrubber once a run has more than one recorded frame.
+function buildTimeline() {
+  const n = recordedFrames.length;
+  if (n <= 1) return;
+  recordedFrames.sort((a, b) => frameRank(a) - frameRank(b));   // chronological
+  const rng = $("tlrange");
+  rng.max = n - 1; rng.value = n - 1;
+  $("timeline").style.display = "flex";
+  $("hint").style.display = "none";
+  sizeTimelineLabel();
+  renderFrame(n - 1);
+}
+
+function stopPlayback() {
+  if (tlTimer) { clearInterval(tlTimer); tlTimer = 0; $("tlplay").innerHTML = "&#9654;"; }
+}
+
+$("tlplay").addEventListener("click", () => {
+  if (tlTimer) { stopPlayback(); return; }
+  if (recordedFrames.length < 2) return;
+  let i = +$("tlrange").value;
+  if (i >= recordedFrames.length - 1) i = -1;   // replay from the start
+  $("tlplay").innerHTML = "&#10073;&#10073;";   // pause glyph
+  tlTimer = setInterval(() => {
+    if (++i >= recordedFrames.length) { stopPlayback(); return; }
+    renderFrame(i);
+  }, 220);
+});
+
+$("tlrange").addEventListener("input", () => {
+  stopPlayback();
+  renderFrame(+$("tlrange").value);
+});
+
+let glbJobId = null;
+let originalExportMesh = null;
+let previewingExport = false;
+
+function meshDescription(m, prefix) {
+  return `${prefix}${m.nv.toLocaleString()} vertices · ${m.nt.toLocaleString()} triangles`
+    + (m.textured ? " · PBR" : " · no material");
+}
+
+function resetExportState() {
+  glbJobId = null; originalExportMesh = null; previewingExport = false;
+  $("pexport").disabled = true;
+  $("pexport").textContent = "preview export";
+  $("dglb").disabled = true;
+  $("dglb").textContent = "download GLB";
+  $("regen").disabled = true;
+  $("exportinfo").textContent = "generate or open a mesh to enable export";
+}
+
+function showOriginalExport() {
+  if (!originalExportMesh) return;
+  const m = originalExportMesh;
+  viewer.setMesh(m.verts, m.normals, m.tris, m.pbr);
+  $("meshinfo").textContent = meshDescription(m, "original · ");
+  previewingExport = false;
+  $("pexport").textContent = "preview export";
+}
+
+function exportQuery() {
+  const q = new URLSearchParams({
+    components: $("exportcomponents").value,
+  });
+  if ($("printwrap").checked) {
+    q.set("print", "1");
+    const a = detailAlpha();               // detail size, % of the bbox diagonal
+    q.set("alpha", a.toFixed(3));
+    q.set("offset", (a / 30).toFixed(4));   // offset tracks detail (CGAL ~alpha/30)
+    q.set("tex", $("wraptex").value);
+  }
+  return q;
+}
+
+// A single "detail" control is the only geometry knob for the print wrap. The
+// slider maps log-linearly to alpha (detail size); the Alpha Wrap offset is
+// derived as ~alpha/30 (CGAL's guideline) rather than exposed on its own —
+// independent offset tuning only invites puffy or degenerate wraps.
+const DETAIL_COARSE = 2.5, DETAIL_FINE = 0.35;   // detail size % at slider ends
+function detailAlpha() {
+  const t = (+$("wrapdetail").value) / 100;
+  return DETAIL_COARSE * Math.pow(DETAIL_FINE / DETAIL_COARSE, t);
+}
+function updateDetailLabel() {
+  const a = detailAlpha();
+  $("wrapdetailval").textContent = `${a.toFixed(2)}% · offset ${(a / 30).toFixed(3)}%`;
+}
+updateDetailLabel();
+
+function exportSettingsChanged() {
+  if (previewingExport) showOriginalExport();
+  if (!glbJobId) return;
+  if ($("printwrap").checked) {
+    $("exportinfo").textContent = originalExportMesh?.textured
+      ? "CGAL will rebuild a watertight mesh; download rebakes source PBR onto its new UV atlas"
+      : "CGAL will rebuild a watertight print mesh; this source has no material to transfer";
+    return;
+  }
+  if (!originalExportMesh?.textured) {
+    $("exportinfo").textContent =
+      "warning: this saved mesh has no material data; its GLB will be geometry-only";
+    return;
+  }
+  const mode = $("exportcomponents").value;
+  $("exportinfo").textContent = mode === "largest"
+    ? "warning: largest-piece cleanup removes every detached component"
+    : mode === "tiny"
+      ? "warning: fragment cleanup can remove intentional small parts"
+      : "direct vertex colour · every component and polygon is preserved";
+}
+
+$("exportcomponents").addEventListener("change", exportSettingsChanged);
+$("printwrap").addEventListener("change", () => {
+  $("printwrapsettings").hidden = !$("printwrap").checked;
+  exportSettingsChanged();
+});
+$("wrapdetail").addEventListener("input", updateDetailLabel);   // live readout while dragging
+$("wrapdetail").addEventListener("change", exportSettingsChanged);
+$("wraptex").addEventListener("change", exportSettingsChanged);
+
+async function loadMesh(id) {
+  const r = await fetch("/api/mesh/" + id);
+  if (!r.ok) throw new Error(await r.text());
+  const buf = await r.arrayBuffer();
+  const magic = new TextDecoder().decode(new Uint8Array(buf, 0, 8));
+  if (magic !== "T2MESH01" && magic !== "T2MESH02" && magic !== "T2MESH03")
+    throw new Error("bad mesh magic");
+  const m = parseMesh(buf);
+  originalExportMesh = m;
+  previewingExport = false;
+  $("meshinfo").textContent = meshDescription(m, "original · ");
+  viewer.setMesh(m.verts, m.normals, m.tris, m.pbr);
+  // Append the finished mesh as the final frame of the scrub timeline.
+  recordedFrames.push({ kind: "mesh", verts: m.verts, normals: m.normals,
+                        tris: m.tris, pbr: m.pbr, meta: { stage: "final mesh" } });
+  buildTimeline();
+  glbJobId = id;
+  $("pexport").disabled = false;
+  $("pexport").textContent = "preview export";
+  $("dglb").disabled = false;
+  $("dglb").textContent = "download GLB";
+  $("regen").disabled = !(history.find(h => h.id === id)?.regeneratable);
+  exportSettingsChanged();
+}
+
+// Reuse the immutable processed input stored with a completed job. Only the
+// current generation settings cross the network; no image is uploaded again.
+$("regen").addEventListener("click", async () => {
+  if (!glbJobId) return;
+  const sourceId = glbJobId;
+  const sourceAsset = history.find(h => h.id === sourceId);
+  if (!sourceAsset?.regeneratable) return;
+  stopShowcase(true);
+  const btn = $("regen");
+  btn.disabled = true; btn.textContent = "queueing…";
+  $("bar").style.display = "block";
+  $("bar").firstElementChild.style.width = "2%";
+  setStatus("queueing saved image…");
+  const genQuality = $("quality").value;
+  const body = new URLSearchParams({
+    quality: genQuality,
+    seed: $("seed").value,
+    steps: $("steps").value,
+    texture_steps: $("texsteps").value,
+    guidance: $("guidance").value,
+    preview: stepsOn ? "1" : "0",
+    keyframes: (stepsOn && kfOn) ? "3" : "0",
+  });
+  try {
+    const r = await fetch("/api/regenerate/" + sourceId, { method: "POST", body });
+    if (!r.ok) throw new Error(await r.text());
+    const { job } = await r.json();
+    viewer.clear();
+    resetExportState();
+    resetTimeline();
+    await poll(job, sourceAsset.thumb, genQuality);
+  } catch (e) {
+    setStatus("regeneration failed: " + e.message, true);
+    $("bar").style.display = "none";
+    btn.disabled = false;
+  } finally {
+    btn.textContent = "regenerate from saved image";
+  }
+});
+
+$("pexport").addEventListener("click", async () => {
+  if (!glbJobId) return;
+  if (previewingExport) { showOriginalExport(); return; }
+  const btn = $("pexport");
+  btn.disabled = true;
+  const wrapping = $("printwrap").checked;
+  btn.textContent = wrapping ? "wrapping…" : "preparing…";
+  setStatus(wrapping ? "constructing watertight CGAL Alpha Wrap…"
+                     : "preparing component-cleanup preview…");
+  try {
+    const r = await fetch(`/api/export-preview/${glbJobId}?${exportQuery()}`);
+    if (!r.ok) throw new Error(await r.text());
+    const m = parseMesh(await r.arrayBuffer());
+    viewer.setMesh(m.verts, m.normals, m.tris, m.pbr);
+    $("meshinfo").textContent = meshDescription(m, "export preview · ");
+    const cleaned = $("exportcomponents").value !== "all";
+    $("exportinfo").textContent = wrapping
+      ? `${m.nt.toLocaleString()} triangles · watertight preview · ${originalExportMesh?.textured ? (m.textured ? "PBR projected per-vertex here; rebaked sharper per-texel on download" : "PBR will be projected per texel on download") : "no source material"}`
+      : cleaned
+        ? `${m.nt.toLocaleString()} triangles remain after explicit component cleanup`
+        : `${m.nt.toLocaleString()} triangles · exact original mesh, no cleanup`;
+    previewingExport = true;
+    btn.textContent = "show original";
+    setStatus(wrapping ? "previewing watertight CGAL print mesh"
+                      : cleaned ? "previewing component-cleaned export mesh"
+                                : "export preview matches the original mesh");
+  } catch (e) {
+    setStatus("export preview failed: " + e.message, true);
+    btn.textContent = "preview export";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// Bake with a bodyless preflight, then let the browser stream the large GLB to
+// its native download manager. Fetching 100+ MiB into an ArrayBuffer/Blob can
+// exhaust a remote device's browser memory and reports only "Failed to fetch".
+$("dglb").addEventListener("click", async () => {
+  if (!glbJobId) return;
+  const btn = $("dglb");
+  btn.disabled = true;
+  btn.textContent = $("printwrap").checked ? "wrapping + baking…" : "baking GLB…";
+  try {
+    const query = exportQuery();
+    const url = `/api/glb/${glbJobId}?${query}`;
+    const r = await fetch(url, { method: "HEAD" });
+    if (!r.ok) throw new Error(r.headers.get("x-trellis-error") || `server returned HTTP ${r.status}`);
+    const bytes = Number(r.headers.get("content-length")) || 0;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `trellis2-${glbJobId}.glb`;
+    document.body.appendChild(a); a.click(); a.remove();
+    const size = bytes ? ` (${(bytes / (1 << 20)).toFixed(1)} MiB)` : "";
+    $("exportinfo").textContent = `GLB download started${size} · ready for Three.js GLTFLoader`;
+    btn.textContent = "download GLB";
+  } catch (e) {
+    setStatus("GLB bake failed: " + e.message, true);
+    btn.textContent = "download GLB";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ── past-generation history ────────────────────────────────────────────────
+ * Server-side only: /api/jobs is the durable index; each entry's thumbnail,
+ * final mesh, and replay frames live in the configured generation store. */
+let history = [];
+let activeGen = null;
+let showcaseBusy = false;
+
+// downscale the input image to a small cover-cropped JPEG data URL
+async function makeThumb(blob) {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const s = 96, cv = document.createElement("canvas"); cv.width = cv.height = s;
+    const ctx = cv.getContext("2d");
+    const k = Math.max(s / bmp.width, s / bmp.height);
+    const w = bmp.width * k, h = bmp.height * k;
+    ctx.drawImage(bmp, (s - w) / 2, (s - h) / 2, w, h);
+    return cv.toDataURL("image/jpeg", 0.7);
+  } catch (e) { return ""; }
+}
+
+async function refreshHistory() {
+  try {
+    const r = await fetch("/api/jobs");
+    if (!r.ok) throw new Error(await r.text());
+    history = (await r.json()).map(h => ({
+      id: h.id, thumb: h.thumbnail || "", quality: h.quality || "auto",
+      ts: h.createdAt || 0, sourceAvailable: !!h.sourceAvailable,
+      regeneratable: !!h.regeneratable,
+    }));
+  } catch (e) {
+    history = [];
+  }
+  renderHistory();
+  if (showcasePage) {
+    $("showcaseempty").classList.toggle("visible", history.length === 0);
+    if (history.length && !showcaseAutostarted) {
+      showcaseAutostarted = true;
+      startShowcase();
+    }
+  }
+}
+
+function renderHistory() {
+  $("histwrap").style.display = history.length ? "" : "none";
+  $("showcasebtn").disabled = !history.length || showcaseBusy;
+  const grid = $("hist");
+  grid.innerHTML = "";
+  history.forEach(h => {
+    const el = document.createElement("div");
+    el.className = "hitem" + (h.id === activeGen ? " active" : "");
+    el.title = h.quality + " · " + new Date(h.ts).toLocaleString();
+    const img = document.createElement("img");
+    if (h.thumb) img.src = h.thumb;
+    img.alt = "";
+    const q = document.createElement("span"); q.className = "q"; q.textContent = h.quality;
+    const x = document.createElement("span"); x.className = "x"; x.title = "remove"; x.textContent = "×";
+    el.append(img, q, x);
+    el.addEventListener("click", e => {
+      if (e.target.classList.contains("x")) removeHistory(h.id);
+      else viewGeneration(h.id);
+    });
+    grid.appendChild(el);
+  });
+}
+
+function addHistory(id, thumb, quality) {
+  history = history.filter(h => h.id !== id);          // de-dupe
+  history.unshift({ id, thumb, quality, ts: Date.now(),
+                    sourceAvailable: true, regeneratable: true });
+  activeGen = id;
+  if (glbJobId === id) $("regen").disabled = false;
+  renderHistory();
+}
+
+async function removeHistory(id, deleteServer = true) {
+  stopShowcase(true);
+  if (deleteServer) {
+    try {
+      const r = await fetch("/api/job/" + id, { method: "DELETE" });
+      if (!r.ok && r.status !== 404) throw new Error(await r.text());
+    } catch (e) {
+      setStatus("could not delete saved generation: " + e.message, true);
+      return;
+    }
+  }
+  history = history.filter(h => h.id !== id);
+  if (activeGen === id) activeGen = null;
+  renderHistory();
+}
+
+// Re-view a past generation (its mesh still lives on the server). If the server
+// still holds its recorded stage frames, replay is scrubbable too.
+async function viewGeneration(id) {
+  stopShowcase(true);
+  setStatus("loading…");
+  try {
+    resetExportState();
+    resetTimeline();
+    try {
+      const jr = await fetch("/api/job/" + id);
+      if (jr.ok) {
+        const jj = await jr.json();
+        const fm = jj.frames || [];
+        for (let k = 0; k < (jj.previewSeq || 0); k++) await recordFrame(id, k, fm);
+        haveFrames = jj.previewSeq || 0;
+      }
+    } catch (e) { /* no recorded frames; mesh-only replay */ }
+    await loadMesh(id);
+    activeGen = id; renderHistory();
+    setStatus("done");
+  } catch (e) {
+    setStatus("that generation is no longer on the server", true);
+    removeHistory(id, false);
+  }
+}
+
+$("histclear").addEventListener("click", async () => {
+  if (!confirm("Delete every saved generation from the server?")) return;
+  stopShowcase(true);
+  try {
+    const r = await fetch("/api/jobs", { method: "DELETE" });
+    if (!r.ok) throw new Error(await r.text());
+    history = []; activeGen = null; renderHistory();
+    setStatus("saved generations cleared");
+  } catch (e) {
+    setStatus("could not clear saved generations: " + e.message, true);
+  }
+});
+
+try { localStorage.removeItem("t2history"); } catch (e) {}
+refreshHistory();
+
+/* ── WebGL2 mesh viewer ─────────────────────────────────────────────────── */
+const viewer = (() => {
+  const canvas = $("gl");
+  const gl = canvas.getContext("webgl2", { antialias: true });
+  if (!gl) {
+    setStatus("WebGL2 not available", true);
+    return {
+      setMesh(){}, setVoxels(){}, clear(){}, setShowcaseAssets(){ return []; },
+      setShowcaseFrame(){}, setShowcaseFocus(){}, finishShowcase(){}, clearShowcase(){},
+    };
+  }
+
+  // Safety net: if the GPU context is ever lost (driver reset / out of memory),
+  // preventDefault keeps it recoverable and we tell the user instead of leaving
+  // a silently-dead black canvas. Rebuilding GL state needs a reload.
+  canvas.addEventListener("webglcontextlost", (e) => {
+    e.preventDefault();
+    setStatus("3D view lost the GPU context — reload the page to restore it.", true);
+  }, false);
+
+  const VS = `#version 300 es
+  layout(location=0) in vec3 pos;
+  layout(location=1) in vec3 nrm;
+  layout(location=2) in vec3 baseColor;
+  layout(location=3) in vec3 metalRoughAlpha;
+  uniform mat4 mvp, viewModel;
+  out vec3 vN; out vec3 vV; out vec3 vNw; out vec3 vCol; out vec2 vMR; out float vA;
+  void main() {
+    gl_Position = mvp * vec4(pos, 1.0);
+    vec4 vp = viewModel * vec4(pos, 1.0);
+    vV  = -vp.xyz;                    // view-space: to-camera (camera at origin)
+    vN  = mat3(viewModel) * nrm;      // view-space normal (orbits with camera)
+    vNw = nrm;                        // model-space normal (for a stable ambient)
+    vCol = baseColor;
+    vMR = metalRoughAlpha.xy;
+    vA = metalRoughAlpha.z;
+  }`;
+  // Lightweight metallic-roughness PBR in view space. The dual-grid mesh has
+  // unoriented winding (faithful to TRELLIS.2), so a normal is a direction line,
+  // not a signed outward normal: every dot uses abs() so back-wound faces shade
+  // identically. No IBL — three studio lights + a Fresnel-lit ambient term
+  // approximate an environment; specular reacts to the orbit via the view vector.
+  // Metallic-roughness PBR with a cheap procedural environment (image-based
+  // lighting), in view space so the "studio" stays put as the model orbits.
+  // The dual-grid mesh is unoriented, so the normal is faced toward the camera.
+  // A broad environment reflection — rather than a single tight point-specular —
+  // is what makes metal read as metal and keeps highlights from "blocking" as
+  // they sweep the faceted surface.
+  const FS = `#version 300 es
+  precision highp float;
+  in vec3 vN; in vec3 vV; in vec3 vNw; in vec3 vCol; in vec2 vMR; in float vA;
+  uniform int wire;
+  uniform int textured;   // 1 = per-vertex PBR (base_color/metallic/roughness)
+  out vec4 frag;
+  // procedural environment radiance in a direction (view space; +y = up)
+  vec3 envColor(vec3 d) {
+    vec3 sky = mix(vec3(0.32, 0.40, 0.55), vec3(0.72, 0.80, 0.98), clamp(d.y, 0.0, 1.0));
+    vec3 gnd = vec3(0.14, 0.13, 0.12);
+    return mix(gnd, sky, smoothstep(-0.30, 0.12, d.y));
+  }
+  void main() {
+    if (wire == 1) { frag = vec4(0.30, 0.64, 1.00, 1.0); return; }
+    vec3 N = normalize(vN), V = normalize(vV);
+    if (dot(N, V) < 0.0) N = -N;   // face the camera (mesh is unoriented)
+    // The network/baseColorTexture convention stores gamma-encoded base color.
+    // PBR math must operate on linear reflectance, as in upstream (** 2.2).
+    vec3  base  = (textured == 1) ? pow(clamp(vCol, 0.0, 1.0), vec3(2.2))
+                                  : vec3(0.62, 0.66, 0.72);
+    float metal = (textured == 1) ? clamp(vMR.x, 0.0, 1.0) : 0.0;
+    float rough = (textured == 1) ? clamp(vMR.y, 0.06, 1.0) : 0.5;
+    float opacity = (textured == 1) ? clamp(vA, 0.0, 1.0) : 1.0;
+    if (opacity < 0.01) discard;
+    float nv = max(dot(N, V), 1e-3);
+
+    // Schlick Fresnel (grazing reflectance rises to 1 - roughness for metals).
+    vec3 F0 = mix(vec3(0.04), base, metal);
+    vec3 F  = F0 + (max(vec3(1.0 - rough), F0) - F0) * pow(1.0 - nv, 5.0);
+
+    // diffuse: hemispheric environment irradiance (metals have no diffuse)
+    vec3 irr = envColor(N) * 0.55 + vec3(0.12);
+    vec3 diffuse = base * (1.0 - metal) * irr;
+
+    // specular: environment reflection, blurred toward a flat tint by roughness
+    vec3 refl = mix(envColor(reflect(-V, N)), vec3(0.34, 0.37, 0.44), rough * rough);
+    vec3 specular = refl * F;
+
+    // one crisp studio key light for a lively highlight
+    vec3 L = normalize(vec3(0.45, 0.70, 0.55)), H = normalize(L + V);
+    float shin = mix(8.0, 260.0, pow(1.0 - rough, 2.0));
+    float sp = pow(max(dot(N, H), 0.0), shin) * (shin + 2.0) / 6.2831853;
+    vec3  kc = vec3(1.00, 0.96, 0.88);
+    float ndl = max(dot(N, L), 0.0);
+    specular += kc * sp * F * ndl;
+    diffuse  += base * (1.0 - metal) * kc * ndl * 0.28;
+
+    vec3 color = diffuse + specular;
+    color = (color * (2.51 * color + 0.03)) / (color * (2.43 * color + 0.59) + 0.14); // ACES
+    frag = vec4(pow(clamp(color, 0.0, 1.0), vec3(1.0/2.2)), opacity);
+  }`;
+
+  function shader(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+      throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, shader(gl.VERTEX_SHADER, VS));
+  gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+    throw new Error(gl.getProgramInfoLog(prog));
+  const uMVP = gl.getUniformLocation(prog, "mvp");
+  const uViewModel = gl.getUniformLocation(prog, "viewModel");
+  const uWire = gl.getUniformLocation(prog, "wire");
+  const uTextured = gl.getUniformLocation(prog, "textured");
+
+  const vao = gl.createVertexArray();
+  const vbo = gl.createBuffer(), nbo = gl.createBuffer(), cbo = gl.createBuffer(), ibo = gl.createBuffer();
+  let nIndices = 0, wireIbo = gl.createBuffer(), nWire = 0, wireStride = 1, hasPBR = false;
+
+  // Showcase finals use one compact GPU resource per station. The focused
+  // station's intermediate frame continues to use the ordinary mesh/voxel
+  // buffers above, so advancing the animation only uploads one changing object.
+  let showcaseMeshes = [];
+  let showcaseActive = -1, showcaseStage = "final", showcaseFocus = 0;
+
+  function makeShowcaseMesh(mesh, offset) {
+    const r = {
+      vao: gl.createVertexArray(), vbo: gl.createBuffer(), nbo: gl.createBuffer(),
+      cbo: gl.createBuffer(), ibo: gl.createBuffer(), nIndices: mesh.tris.length,
+      hasPBR: !!mesh.pbr, offset,
+    };
+    gl.bindVertexArray(r.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, r.vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.verts, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, r.nbo);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.normals, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+    if (r.hasPBR) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, r.cbo);
+      gl.bufferData(gl.ARRAY_BUFFER, mesh.pbr, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 24, 0);
+      gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 3, gl.FLOAT, false, 24, 12);
+    } else {
+      gl.disableVertexAttribArray(2); gl.disableVertexAttribArray(3);
+    }
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, r.ibo);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(mesh.tris), gl.STATIC_DRAW);
+    gl.bindVertexArray(null);
+    return r;
+  }
+
+  function disposeShowcaseMeshes() {
+    for (const r of showcaseMeshes) {
+      gl.deleteBuffer(r.vbo); gl.deleteBuffer(r.nbo); gl.deleteBuffer(r.cbo);
+      gl.deleteBuffer(r.ibo); gl.deleteVertexArray(r.vao);
+    }
+    showcaseMeshes = []; showcaseActive = -1; showcaseStage = "final";
+  }
+
+  /* ── instanced-voxel program (live intermediate previews) ───────────────── */
+  // One unit cube drawn once per occupied voxel; the "coarse" blocky look reads
+  // clearly as an in-progress stage against the final smooth mesh.
+  const VVS = `#version 300 es
+  layout(location=0) in vec3 cubePos;    // cube corner in [-0.5,0.5]
+  layout(location=1) in vec3 cubeNrm;    // per-face normal
+  layout(location=2) in vec3 cellCenter; // per-instance voxel center
+  uniform mat4 mvp, viewModel;
+  uniform float vsize;                    // voxel edge length (1/res)
+  out vec3 vN; out vec3 vNw;
+  void main() {
+    vec3 world = cellCenter + cubePos * vsize;
+    gl_Position = mvp * vec4(world, 1.0);
+    vN  = mat3(viewModel) * cubeNrm;
+    vNw = cubeNrm;
+  }`;
+  const VFS = `#version 300 es
+  precision highp float;
+  in vec3 vN; in vec3 vNw;
+  out vec4 frag;
+  void main() {
+    vec3 N = normalize(vN);
+    vec3 L1 = normalize(vec3(0.32, 0.55, 0.77)), L2 = normalize(vec3(-0.65, 0.20, 0.45));
+    float d = 0.75 * abs(dot(N, L1)) + 0.35 * abs(dot(N, L2));
+    float hemi = abs(normalize(vNw).y) * 0.5 + 0.5;
+    vec3 amb = mix(vec3(0.13, 0.15, 0.20), vec3(0.24, 0.34, 0.52), hemi);
+    vec3 base = vec3(0.30, 0.60, 1.00);   // "in-progress" blue
+    frag = vec4(pow(clamp(base * (amb + d), 0.0, 1.0), vec3(1.0/2.2)), 1.0);
+  }`;
+  const vprog = gl.createProgram();
+  gl.attachShader(vprog, shader(gl.VERTEX_SHADER, VVS));
+  gl.attachShader(vprog, shader(gl.FRAGMENT_SHADER, VFS));
+  gl.linkProgram(vprog);
+  if (!gl.getProgramParameter(vprog, gl.LINK_STATUS))
+    throw new Error(gl.getProgramInfoLog(vprog));
+  const uvMVP = gl.getUniformLocation(vprog, "mvp");
+  const uvViewModel = gl.getUniformLocation(vprog, "viewModel");
+  const uvSize = gl.getUniformLocation(vprog, "vsize");
+
+  // unit cube: 6 faces × 4 corners (pos in [-0.5,0.5], per-face normal), 36 idx
+  const cubePos = [], cubeNrm = [], cubeIdx = [];
+  const faces = [
+    { n: [1, 0, 0],  u: [0, 1, 0], v: [0, 0, 1] }, { n: [-1, 0, 0], u: [0, 0, 1], v: [0, 1, 0] },
+    { n: [0, 1, 0],  u: [0, 0, 1], v: [1, 0, 0] }, { n: [0, -1, 0], u: [1, 0, 0], v: [0, 0, 1] },
+    { n: [0, 0, 1],  u: [1, 0, 0], v: [0, 1, 0] }, { n: [0, 0, -1], u: [0, 1, 0], v: [1, 0, 0] },
+  ];
+  for (const f of faces) {
+    const b = cubePos.length / 3;
+    for (const [a, c] of [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]) {
+      for (let k = 0; k < 3; k++) cubePos.push(f.n[k] * 0.5 + a * f.u[k] + c * f.v[k]);
+      cubeNrm.push(...f.n);
+    }
+    cubeIdx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+  }
+  const vvao = gl.createVertexArray();
+  const cubeVbo = gl.createBuffer(), cubeNbo = gl.createBuffer(), cubeIbo = gl.createBuffer(), instBo = gl.createBuffer();
+  gl.bindVertexArray(vvao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, cubeVbo);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cubePos), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, cubeNbo);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cubeNrm), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, instBo);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribDivisor(2, 1);   // one cellCenter per instance
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeIbo);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cubeIdx), gl.STATIC_DRAW);
+  gl.bindVertexArray(null);
+
+  let renderMode = "none", nVox = 0, voxSize = 0;
+
+  /* ── trackball orientation (quaternion) ─────────────────────────────────────
+   * Rotation is an accumulated unit quaternion, not Euler yaw/pitch. Each drag
+   * composes a small rotation about the *screen* axes (camera right / up) onto
+   * the current orientation, so there are no poles and no gimbal lock — every
+   * orientation is reachable, and a pure horizontal or vertical drag turns about
+   * a single axis at a time. */
+  const Q = {
+    axisAngle(x, y, z, a) { const h = a * 0.5, s = Math.sin(h); return [x*s, y*s, z*s, Math.cos(h)]; },
+    mul(a, b) {   // Hamilton product a·b (apply b, then a)
+      return [
+        a[3]*b[0] + a[0]*b[3] + a[1]*b[2] - a[2]*b[1],
+        a[3]*b[1] - a[0]*b[2] + a[1]*b[3] + a[2]*b[0],
+        a[3]*b[2] + a[0]*b[1] - a[1]*b[0] + a[2]*b[3],
+        a[3]*b[3] - a[0]*b[0] - a[1]*b[1] - a[2]*b[2],
+      ];
+    },
+    norm(q) { const n = Math.hypot(q[0], q[1], q[2], q[3]) || 1; return [q[0]/n, q[1]/n, q[2]/n, q[3]/n]; },
+    toMat4(q) {   // column-major rotation matrix
+      const [x, y, z, w] = q;
+      const xx = x*x, yy = y*y, zz = z*z, xy = x*y, xz = x*z, yz = y*z, wx = w*x, wy = w*y, wz = w*z;
+      return new Float32Array([
+        1-2*(yy+zz), 2*(xy+wz),   2*(xz-wy),   0,
+        2*(xy-wz),   1-2*(xx+zz), 2*(yz+wx),   0,
+        2*(xz+wy),   2*(yz-wx),   1-2*(xx+yy), 0,
+        0, 0, 0, 1,
+      ]);
+    },
+  };
+  // Default view: TRELLIS is Z-up, so bring it Y-up (a -90° turn about X, the
+  // same convention as the exported GLB) then a gentle 3/4 turn. Reset (below,
+  // and double-click) returns here.
+  const QBASE = Q.norm(Q.mul(Q.axisAngle(1, 0, 0, -0.30),
+                       Q.mul(Q.axisAngle(0, 1, 0, 0.55),
+                             Q.axisAngle(1, 0, 0, -Math.PI / 2))));
+  let rot = QBASE.slice(), dist = 1.8, panX = 0, panY = 0;
+  let wire = false, spin = true;
+
+  function setMesh(verts, normals, tris, pbr, keepShowcase = false) {
+    if (!keepShowcase) disposeShowcaseMeshes();
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, nbo);
+    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+    // per-vertex PBR: base_color rgb (loc 2) + metallic,roughness,alpha (loc 3),
+    // interleaved 6 floats (stride 24 bytes).
+    hasPBR = !!pbr;
+    if (hasPBR) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, cbo);
+      gl.bufferData(gl.ARRAY_BUFFER, pbr, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(2);
+      gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 24, 0);
+      gl.enableVertexAttribArray(3);
+      gl.vertexAttribPointer(3, 3, gl.FLOAT, false, 24, 12);
+    } else {
+      gl.disableVertexAttribArray(2);
+      gl.disableVertexAttribArray(3);
+    }
+    const idx = new Uint32Array(tris);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+    nIndices = idx.length;
+    // wireframe index buffer: 3 edges per triangle. A full per-triangle wireframe
+    // of a multi-million-triangle mesh is pathological — WebGL lines are min 1px
+    // wide, so sub-pixel triangles fill in as a solid mass, AND the buffer/draw
+    // gets so large (a 9M-tri mesh → a 216 MB buffer + 27M line segments) that it
+    // OOMs or stalls the GPU, losing the context and blanking the canvas. So we
+    // bound it to WIRE_BUDGET indices, striding whole triangles above that.
+    const WIRE_BUDGET = 12_000_000;               // ~6M segments, ~48 MB
+    const nTri = nIndices / 3;
+    wireStride = Math.max(1, Math.ceil(nTri * 6 / WIRE_BUDGET));
+    const wireIdx = new Uint32Array(Math.ceil(nTri / wireStride) * 6);
+    let o = 0;
+    for (let t = 0; t < nIndices; t += 3 * wireStride) {
+      wireIdx[o++] = idx[t];     wireIdx[o++] = idx[t + 1];
+      wireIdx[o++] = idx[t + 1]; wireIdx[o++] = idx[t + 2];
+      wireIdx[o++] = idx[t + 2]; wireIdx[o++] = idx[t];
+    }
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, wireIbo);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, wireIdx.subarray(0, o), gl.STATIC_DRAW);
+    nWire = o;
+    gl.bindVertexArray(null);
+    renderMode = "mesh";
+  }
+
+  // Upload an occupied-voxel set (coords in [0,res)) for a live preview and
+  // switch to blocky voxel rendering. Camera is left untouched so previews and
+  // the final mesh share one continuous view (reset happens in clear()).
+  function setVoxels(res, coords, keepShowcase = false) {
+    if (!keepShowcase) disposeShowcaseMeshes();
+    const nv = coords.length / 3;
+    const centers = new Float32Array(nv * 3);
+    for (let i = 0; i < nv; i++) {
+      centers[i*3]   = (coords[i*3]   + 0.5) / res - 0.5;
+      centers[i*3+1] = (coords[i*3+1] + 0.5) / res - 0.5;
+      centers[i*3+2] = (coords[i*3+2] + 0.5) / res - 0.5;
+    }
+    gl.bindVertexArray(vvao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, instBo);
+    gl.bufferData(gl.ARRAY_BUFFER, centers, gl.DYNAMIC_DRAW);
+    gl.bindVertexArray(null);
+    nVox = nv; voxSize = 1.0 / res;
+    renderMode = "voxel";
+  }
+
+  // Blank the view and recenter the camera for a new generation.
+  function clear() {
+    disposeShowcaseMeshes();
+    renderMode = "none";
+    rot = QBASE.slice(); dist = 1.8; panX = 0; panY = 0;
+  }
+
+  // Place every finished asset along a shared world-space row. Each object is
+  // rotated around its own origin; the camera focus then travels between the
+  // fixed station offsets, matching the Free-Splatter storyboard layout.
+  function setShowcaseAssets(assets, spacing) {
+    disposeShowcaseMeshes();
+    const center = (assets.length - 1) * 0.5;
+    showcaseMeshes = assets.map((mesh, i) =>
+      makeShowcaseMesh(mesh, (i - center) * spacing));
+    showcaseActive = showcaseMeshes.length ? 0 : -1;
+    showcaseStage = "final";
+    showcaseFocus = showcaseMeshes.length ? showcaseMeshes[0].offset : 0;
+    rot = QBASE.slice(); dist = 1.8; panX = 0; panY = 0;
+    renderMode = showcaseMeshes.length ? "showcase" : "none";
+    return showcaseMeshes.map(r => r.offset);
+  }
+
+  function setShowcaseFrame(index, stage) {
+    if (!showcaseMeshes[index]) return;
+    showcaseActive = index;
+    if (!stage || stage.kind === "final") {
+      showcaseStage = "final";
+    } else if (stage.kind === "hidden") {
+      showcaseStage = "hidden";
+    } else if (stage.kind === "voxel") {
+      setVoxels(stage.res, stage.coords, true);
+      showcaseStage = "voxel";
+    } else {
+      setMesh(stage.verts, stage.normals, stage.tris, stage.pbr, true);
+      showcaseStage = "mesh";
+    }
+    renderMode = "showcase";
+  }
+
+  function setShowcaseFocus(x) { showcaseFocus = x; }
+  function finishShowcase() {
+    if (showcaseMeshes.length) {
+      showcaseStage = "final";
+      renderMode = "showcase";
+    }
+  }
+  function clearShowcase() {
+    disposeShowcaseMeshes();
+    if (renderMode === "showcase") renderMode = "none";
+  }
+
+  /* minimal mat4 helpers (column-major) */
+  const M = {
+    mul(a, b) {
+      const o = new Float32Array(16);
+      for (let c = 0; c < 4; ++c) for (let r = 0; r < 4; ++r)
+        o[c*4+r] = a[r]*b[c*4] + a[4+r]*b[c*4+1] + a[8+r]*b[c*4+2] + a[12+r]*b[c*4+3];
+      return o;
+    },
+    persp(fov, asp, near, far) {
+      const f = 1 / Math.tan(fov / 2), o = new Float32Array(16);
+      o[0] = f / asp; o[5] = f;
+      o[10] = (far + near) / (near - far); o[11] = -1;
+      o[14] = 2 * far * near / (near - far);
+      return o;
+    },
+    trans(x, y, z) {
+      const o = new Float32Array(16);
+      o[0] = o[5] = o[10] = o[15] = 1;
+      o[12] = x; o[13] = y; o[14] = z;
+      return o;
+    },
+  };
+
+  /* input */
+  let dragging = false, panning = false, lx = 0, ly = 0;
+  canvas.addEventListener("mousedown", e => {
+    dragging = true;
+    panning = e.button === 2 || e.shiftKey;
+    lx = e.clientX; ly = e.clientY;
+  });
+  window.addEventListener("mouseup", () => dragging = false);
+  window.addEventListener("mousemove", e => {
+    if (!dragging) return;
+    const dx = e.clientX - lx, dy = e.clientY - ly;
+    lx = e.clientX; ly = e.clientY;
+    if (panning) {
+      panX += dx * 0.0015 * dist; panY -= dy * 0.0015 * dist;
+    } else {
+      // Compose screen-axis turns onto the current orientation (fixed camera
+      // frame): horizontal drag → about screen-up (Y), vertical → screen-right
+      // (X). Pre-multiplying keeps it screen-relative, so it never locks up.
+      const k = 0.008;
+      rot = Q.norm(Q.mul(Q.axisAngle(1, 0, 0, dy * k),
+                   Q.mul(Q.axisAngle(0, 1, 0, dx * k), rot)));
+      spin = false; $("tspin").classList.remove("on");
+    }
+  });
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
+  canvas.addEventListener("wheel", e => {
+    e.preventDefault();
+    dist *= Math.exp(e.deltaY * 0.001);
+    dist = Math.max(0.3, Math.min(8, dist));
+  }, { passive: false });
+  // double-click: snap back to the upright default view
+  canvas.addEventListener("dblclick", () => { rot = QBASE.slice(); dist = 1.8; panX = panY = 0; });
+
+  $("twire").addEventListener("click", () => {
+    wire = !wire; $("twire").classList.toggle("on", wire);
+  });
+  $("tspin").addEventListener("click", () => {
+    spin = !spin; $("tspin").classList.toggle("on", spin);
+  });
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.clearColor(0.063, 0.078, 0.094, 1);
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = (now - last) / 1000; last = now;
+    // auto-rotate: a slow turn about the screen-vertical axis (turntable feel)
+    if (spin) {
+      const spinRate = showcasePage ? 0.12 : 0.4;
+      rot = Q.norm(Q.mul(Q.axisAngle(0, 1, 0, dt * spinRate), rot));
+    }
+
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== w * devicePixelRatio || canvas.height !== h * devicePixelRatio) {
+      canvas.width = w * devicePixelRatio; canvas.height = h * devicePixelRatio;
+    }
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    if (renderMode !== "none") {
+      const rotation = Q.toMat4(rot);
+      const focus = renderMode === "showcase" ? showcaseFocus : 0;
+      const view = M.trans(panX - focus, panY, -dist);
+      const proj = M.persp(0.9, w / h, 0.05, 100);
+      // Translation precedes each object's local rotation, so every showcase
+      // asset spins in place instead of the whole row orbiting around its centre.
+      const matricesAt = offset => {
+        const model = offset ? M.mul(M.trans(offset, 0, 0), rotation) : rotation;
+        const viewModel = M.mul(view, model);
+        return { viewModel, mvp: M.mul(proj, viewModel) };
+      };
+      const drawFilledMesh = (r, matrices) => {
+        gl.useProgram(prog);
+        gl.uniformMatrix4fv(uMVP, false, matrices.mvp);
+        gl.uniformMatrix4fv(uViewModel, false, matrices.viewModel);
+        gl.uniform1i(uWire, 0);
+        gl.uniform1i(uTextured, r.hasPBR ? 1 : 0);
+        gl.bindVertexArray(r.vao);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, r.ibo);
+        gl.drawElements(gl.TRIANGLES, r.nIndices, gl.UNSIGNED_INT, 0);
+        gl.bindVertexArray(null);
+      };
+      const drawVoxels = matrices => {
+        if (!nVox) return;
+        gl.useProgram(vprog);
+        gl.uniformMatrix4fv(uvMVP, false, matrices.mvp);
+        gl.uniformMatrix4fv(uvViewModel, false, matrices.viewModel);
+        gl.uniform1f(uvSize, voxSize);
+        gl.bindVertexArray(vvao);
+        gl.drawElementsInstanced(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0, nVox);
+        gl.bindVertexArray(null);
+      };
+
+      if (renderMode === "showcase") {
+        // Every non-focused station remains as its finished mesh. The focused
+        // station is replaced by its recorded frame until it reaches final.
+        for (let i = 0; i < showcaseMeshes.length; i++) {
+          if (i === showcaseActive && showcaseStage !== "final") continue;
+          const r = showcaseMeshes[i];
+          drawFilledMesh(r, matricesAt(r.offset));
+        }
+        const active = showcaseMeshes[showcaseActive];
+        if (active && showcaseStage === "voxel") {
+          drawVoxels(matricesAt(active.offset));
+        } else if (active && showcaseStage === "mesh" && nIndices) {
+          drawFilledMesh({ vao, ibo, nIndices, hasPBR }, matricesAt(active.offset));
+        }
+      } else if (renderMode === "voxel") {
+        drawVoxels(matricesAt(0));
+      } else if (renderMode === "mesh" && nIndices) {
+        const matrices = matricesAt(0);
+        gl.useProgram(prog);
+        gl.uniformMatrix4fv(uMVP, false, matrices.mvp);
+        gl.uniformMatrix4fv(uViewModel, false, matrices.viewModel);
+        gl.bindVertexArray(vao);
+        if (wire) {
+          // hidden-line wireframe: a depth-only prepass (pushed back a hair via
+          // polygon offset) occludes back-facing edges, so you see the front
+          // surface's edges — the mesh form — instead of a see-through blob.
+          gl.enable(gl.POLYGON_OFFSET_FILL);
+          gl.polygonOffset(1.0, 1.0);
+          gl.colorMask(false, false, false, false);
+          gl.uniform1i(uWire, 0);
+          gl.uniform1i(uTextured, 0);
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+          gl.drawElements(gl.TRIANGLES, nIndices, gl.UNSIGNED_INT, 0);
+          gl.colorMask(true, true, true, true);
+          gl.disable(gl.POLYGON_OFFSET_FILL);
+          gl.uniform1i(uWire, 1);
+          // Front-surface edges sit at ~equal depth to the offset-back fill, so
+          // LEQUAL lets them pass while occluded edges (greater depth) fail.
+          gl.depthFunc(gl.LEQUAL);
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, wireIbo);
+          gl.drawElements(gl.LINES, nWire, gl.UNSIGNED_INT, 0);
+          gl.depthFunc(gl.LESS);
+        } else {
+          gl.uniform1i(uWire, 0);
+          gl.uniform1i(uTextured, hasPBR ? 1 : 0);
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+          gl.drawElements(gl.TRIANGLES, nIndices, gl.UNSIGNED_INT, 0);
+        }
+        gl.bindVertexArray(null);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  return {
+    setMesh, setVoxels, clear, setShowcaseAssets, setShowcaseFrame,
+    setShowcaseFocus, finishShowcase, clearShowcase,
+  };
+})();
+
+/* ── all-generation showcase ────────────────────────────────────────────────
+ * Finished assets occupy fixed stations in one scene. Focus glides between
+ * them; at each stop the finished mesh is temporarily replaced by the job's
+ * recorded voxel/mesh stages, then restored for a longer final-render linger.
+ * This only reads existing job data. Final meshes are loaded unchanged from
+ * the durable full-density assets; it never loads or runs an inference model. */
+const SHOWCASE_SPACING = 1.7;
+const SHOWCASE_MAX_VOXEL_FRAMES = 18;
+const SHOWCASE_FRAME_MS = 320;
+const SHOWCASE_FINAL_MS = 3200;
+const SHOWCASE_TRAVEL_MS = 1400;
+const SHOWCASE_IMAGE_HOLD_MS = 1800;
+const SHOWCASE_IMAGE_SHRINK_MS = 1200;
+
+let showcaseRunId = 0;
+let showcaseAbort = null;
+let showcaseRunning = false;
+let showcaseAutostarted = false;
+let showcaseAssets = [];
+let showcaseIndex = -1;
+let showcaseFocusValue = 0;
+let showcaseSourceId = "";
+
+function hideShowcaseSource(clear = false) {
+  const img = $("showcasesource");
+  img.classList.remove("visible");
+  if (clear) {
+    img.classList.remove("corner");
+    img.removeAttribute("src");
+    showcaseSourceId = "";
+  } else {
+    setTimeout(() => {
+      if (!img.classList.contains("visible")) {
+        img.classList.remove("corner");
+        img.removeAttribute("src");
+        showcaseSourceId = "";
+      }
+    }, 380);
+  }
+}
+
+async function loadShowcaseSource(asset, token) {
+  const img = $("showcasesource");
+  if (showcaseSourceId === asset.id && img.classList.contains("visible")) return true;
+  hideShowcaseSource(true);
+  const loaded = await new Promise(resolve => {
+    let finished = false, triedFallback = false;
+    const done = ok => { if (!finished) { finished = true; resolve(ok); } };
+    img.onload = () => done(true);
+    img.onerror = () => {
+      if (!triedFallback && asset.thumb) {
+        triedFallback = true;
+        img.src = asset.thumb; // older persisted jobs have only the 96px thumbnail
+      } else done(false);
+    };
+    img.src = `/api/source/${asset.id}`;
+    setTimeout(() => done(false), 5000);
+  });
+  if (!loaded || token !== showcaseRunId) return false;
+  showcaseSourceId = asset.id;
+  img.classList.remove("corner");
+  // Flush the centered state before fading in so a previous station cannot
+  // collapse the center→corner transition into a single layout update.
+  void img.offsetWidth;
+  img.classList.add("visible");
+  return true;
+}
+
+async function playShowcaseSourceIntro(asset, token) {
+  if (!await loadShowcaseSource(asset, token)) return token === showcaseRunId;
+  if (!await showcaseWait(SHOWCASE_IMAGE_HOLD_MS, token)) return false;
+  $("showcasesource").classList.add("corner");
+  return showcaseWait(SHOWCASE_IMAGE_SHRINK_MS, token);
+}
+
+function showcaseFrameSeqs(job) {
+  const n = Math.max(0, job.previewSeq || 0), meta = job.frames || [];
+  const meshes = [], voxels = [];
+  for (let i = 0; i < n; i++) {
+    if (meta[i] && meta[i].kind === "mesh") meshes.push(i);
+    else voxels.push(i);
+  }
+  const picked = new Set(meshes); // mesh keyframes are few and always worth keeping
+  if (voxels.length <= SHOWCASE_MAX_VOXEL_FRAMES) {
+    voxels.forEach(i => picked.add(i));
+  } else {
+    for (let i = 0; i < SHOWCASE_MAX_VOXEL_FRAMES; i++) {
+      const at = Math.round(i * (voxels.length - 1) / (SHOWCASE_MAX_VOXEL_FRAMES - 1));
+      picked.add(voxels[at]);
+    }
+  }
+  return [...picked].sort((a, b) => a - b).map(seq => ({ seq, meta: meta[seq] }));
+}
+
+async function fetchShowcaseFrame(id, ref, signal) {
+  const r = await fetch(`/api/preview/${id}?seq=${ref.seq}`, { signal });
+  if (!r.ok) return null;
+  const buf = await r.arrayBuffer();
+  const magic = new TextDecoder().decode(new Uint8Array(buf, 0, 6));
+  if (magic === "T2VOX0") {
+    const dv = new DataView(buf);
+    const res = dv.getUint32(8, true), nvox = dv.getUint32(12, true);
+    return { kind: "voxel", res, coords: new Uint16Array(buf, 16, nvox * 3), meta: ref.meta };
+  }
+  if (magic === "T2MESH") {
+    const m = parseMesh(buf);
+    return { kind: "mesh", verts: m.verts, normals: m.normals,
+             tris: m.tris, pbr: m.pbr, meta: ref.meta };
+  }
+  return null;
+}
+
+async function loadShowcaseAsset(h, position, total, signal) {
+  $("showcaselabel").textContent = `loading ${position}/${total} · ${h.quality || "generation"}`;
+  const jr = await fetch("/api/job/" + h.id, { signal });
+  if (!jr.ok) throw new Error("job unavailable");
+  const job = await jr.json();
+  if (job.state !== "done") throw new Error("job is not finished");
+
+  const mr = await fetch("/api/mesh/" + h.id, { signal });
+  if (!mr.ok) throw new Error("mesh unavailable");
+  const final = parseMesh(await mr.arrayBuffer());
+  return {
+    id: h.id, quality: h.quality || "generation", thumb: h.thumb,
+    refs: showcaseFrameSeqs(job), frames: null, final,
+  };
+}
+
+async function ensureShowcaseFrames(asset, token, signal) {
+  if (asset.frames) return asset.frames;
+  const frames = [];
+  for (let i = 0; i < asset.refs.length; i += 4) {
+    if (token !== showcaseRunId) return [];
+    $("showcaselabel").textContent =
+      `${showcaseIndex + 1}/${showcaseAssets.length} · loading recorded stages ${Math.min(i + 4, asset.refs.length)}/${asset.refs.length}`;
+    const batch = await Promise.all(asset.refs.slice(i, i + 4)
+      .map(ref => fetchShowcaseFrame(asset.id, ref, signal)));
+    batch.forEach(f => { if (f) frames.push(f); });
+  }
+  frames.sort((a, b) => frameRank(a) - frameRank(b));
+  asset.frames = frames;
+  return frames;
+}
+
+function showcaseWait(ms, token) {
+  return new Promise(resolve => setTimeout(() => resolve(token === showcaseRunId), ms));
+}
+
+function animateShowcaseFocus(target, duration, token) {
+  const from = showcaseFocusValue, started = performance.now();
+  return new Promise(resolve => {
+    const tick = now => {
+      if (token !== showcaseRunId) { resolve(false); return; }
+      const p = Math.min(1, (now - started) / Math.max(1, duration));
+      const smooth = p * p * (3 - 2 * p);
+      showcaseFocusValue = from + (target - from) * smooth;
+      viewer.setShowcaseFocus(showcaseFocusValue);
+      if (p < 1) requestAnimationFrame(tick);
+      else resolve(true);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+function showcaseStageText(frame) {
+  const m = frame.meta || {};
+  let s = m.stage || (frame.kind === "mesh" ? "mesh keyframe" : "voxel structure");
+  if (m.total) s += ` ${m.step}/${m.total}`;
+  return s;
+}
+
+async function runShowcaseLoop(token, signal) {
+  while (token === showcaseRunId && showcaseAssets.length) {
+    for (let i = 0; i < showcaseAssets.length; i++) {
+      if (token !== showcaseRunId) return;
+      const asset = showcaseAssets[i];
+      showcaseIndex = i;
+      activeGen = asset.id; renderHistory();
+      if (showcaseSourceId !== asset.id) hideShowcaseSource();
+      viewer.setShowcaseFrame(i, { kind: "hidden" });
+      $("showcaselabel").textContent = `${i + 1}/${showcaseAssets.length} · moving to ${asset.quality}`;
+      const travel = i === 0 && Math.abs(showcaseFocusValue - asset.offset) < 1e-4
+        ? 250 : SHOWCASE_TRAVEL_MS;
+      if (!await animateShowcaseFocus(asset.offset, travel, token)) return;
+
+      $("showcaselabel").textContent = `${i + 1}/${showcaseAssets.length} · source image`;
+      if (!await playShowcaseSourceIntro(asset, token)) return;
+
+      let frames;
+      try {
+        frames = await ensureShowcaseFrames(asset, token, signal);
+      } catch (e) {
+        if (e.name === "AbortError" || token !== showcaseRunId) return;
+        frames = []; // a missing recording should not suppress the finished asset
+      }
+      for (let k = 0; k < frames.length; k++) {
+        if (token !== showcaseRunId) return;
+        viewer.setShowcaseFrame(i, frames[k]);
+        $("showcaselabel").textContent =
+          `${i + 1}/${showcaseAssets.length} · ${k + 1}/${frames.length} · ${showcaseStageText(frames[k])}`;
+        if (!await showcaseWait(SHOWCASE_FRAME_MS, token)) return;
+      }
+
+      viewer.setShowcaseFrame(i, null);
+      $("showcaselabel").textContent =
+        `${i + 1}/${showcaseAssets.length} · final · ${asset.triangles.toLocaleString()} triangles`;
+      if (!await showcaseWait(SHOWCASE_FINAL_MS, token)) return;
+      hideShowcaseSource();
+    }
+  }
+}
+
+function stopShowcase(clearScene = false) {
+  showcaseRunId++;
+  if (showcaseAbort) showcaseAbort.abort();
+  showcaseAbort = null; showcaseRunning = false; showcaseBusy = false;
+  $("showcasehud").style.display = "none";
+  $("showcasebtn").textContent = "showcase";
+  $("showcasebtn").disabled = !history.length;
+  hideShowcaseSource(true);
+  if (clearScene) viewer.clearShowcase();
+  else viewer.finishShowcase(); // leave the complete lineup visible when manually stopped
+}
+
+async function startShowcase() {
+  if (!history.length) return;
+  stopPlayback();
+  stopShowcase(true);
+  resetExportState();
+  resetTimeline();
+  const token = ++showcaseRunId;
+  showcaseAbort = new AbortController();
+  const signal = showcaseAbort.signal;
+  showcaseBusy = true;
+  $("showcasebtn").disabled = true;
+  $("showcasehud").style.display = "flex";
+  $("showcaselabel").textContent = "loading showcase…";
+  setStatus("loading existing generations for showcase…");
+
+  // History is newest-first in the sidebar; the showcase tells the chronological
+  // story from the oldest still-available generation to the newest.
+  const candidates = [...history].reverse();
+  const assets = [], unavailable = [];
+  try {
+    // Match the Free-Splatter storyboard: put the first source image on screen
+    // immediately while the full-density mesh lineup is loading behind it.
+    if (showcasePage && candidates.length)
+      loadShowcaseSource(candidates[0], token).catch(() => {});
+    for (let i = 0; i < candidates.length; i++) {
+      if (token !== showcaseRunId) return;
+      try {
+        assets.push(await loadShowcaseAsset(candidates[i], i + 1, candidates.length, signal));
+      } catch (e) {
+        if (e.name === "AbortError" || token !== showcaseRunId) return;
+        unavailable.push(candidates[i].id);
+      }
+    }
+    if (!assets.length) throw new Error("none of the saved generations are still available on this server");
+    if (token !== showcaseRunId) return;
+
+    const finalMeshes = assets.map(a => a.final);
+    const offsets = viewer.setShowcaseAssets(finalMeshes, SHOWCASE_SPACING);
+    for (let i = 0; i < assets.length; i++) {
+      assets[i].offset = offsets[i];
+      assets[i].triangles = assets[i].final.nt;
+      assets[i].final = null; // GPU upload is complete; release duplicate browser RAM
+    }
+    finalMeshes.length = 0;
+    showcaseAssets = assets;
+    showcaseIndex = 0;
+    showcaseFocusValue = offsets[0];
+    showcaseRunning = true; showcaseBusy = false;
+    $("showcasebtn").disabled = false;
+    $("showcasebtn").textContent = "restart showcase";
+    $("hint").style.display = "";
+    setStatus(`showcase · ${assets.length} assets` +
+      (unavailable.length ? ` · ${unavailable.length} unavailable after a server restart` : ""));
+    runShowcaseLoop(token, signal).catch(e => {
+      if (token !== showcaseRunId || e.name === "AbortError") return;
+      stopShowcase(false);
+      setStatus("showcase stopped: " + e.message, true);
+    });
+  } catch (e) {
+    if (token !== showcaseRunId || e.name === "AbortError") return;
+    stopShowcase(true);
+    setStatus("could not start showcase: " + e.message, true);
+  }
+}
+
+$("showcasebtn").addEventListener("click", () => {
+  if (showcasePage) startShowcase();
+  else location.href = "/showcase";
+});
+$("showcasestop").addEventListener("click", () => {
+  const hadScene = showcaseRunning, wasLoading = showcaseBusy;
+  stopShowcase(false);
+  if (hadScene) setStatus("showcase stopped · the finished lineup remains in view");
+  else if (wasLoading) setStatus("showcase loading cancelled");
+});
+if (showcasePage) {
+  addEventListener("keydown", e => { if (e.key === "Escape") location.href = "/"; });
+}
+</script>
+</body>
+</html>

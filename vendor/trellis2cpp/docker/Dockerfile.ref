@@ -1,0 +1,25 @@
+# Python reference environment for parity dumps.
+#
+# Deliberately stock-PyTorch only: no FlexGEMM / flash-attn / o-voxel / CuMesh
+# CUDA extensions. Sparse attention and sparse conv are monkeypatched to dense
+# equivalents by scripts/ref_common.py (batch=1 makes them equal), so reference
+# activations can be produced on GPU or CPU without custom kernels — that also
+# keeps the RTX 5070 Ti (sm_120) out of extension-build trouble.
+#
+# Build:  docker build -f docker/Dockerfile.ref -t trellis2-ref docker
+# Run :   docker run --rm --device nvidia.com/gpu=all \
+#             -v "$PWD":/work -v "$PWD/../python/TRELLIS.2":/trellis2 \
+#             -e PYTHONPATH=/trellis2 -w /work trellis2-ref python scripts/...
+FROM pytorch/pytorch:2.7.1-cuda12.8-cudnn9-devel
+
+RUN pip install --no-cache-dir \
+    "transformers==4.57.1" \
+    safetensors \
+    pillow \
+    numpy \
+    easydict \
+    opencv-python-headless \
+    trimesh \
+    tqdm \
+    imageio \
+    gguf

@@ -1,0 +1,186 @@
+AISmith Engine
+Copyright (c) 2026 Intisar Hasnain
+Copyright (c) 2026 Boundless Games, LLC
+
+The source code in this repository is licensed under the MIT License; see
+LICENSE.
+
+
+Origin
+------
+
+This repository began as a fork of github.com/intisarGIT/AISmith-3D, released
+under the MIT License by Intisar Hasnain, at commit 8af574d (2026-07-22).
+Boundless Games, LLC has developed it since. LICENSE keeps both copyright
+notices.
+
+
+What the MIT License covers
+---------------------------
+
+The MIT License covers this repository's own code only. The engine fetches,
+builds and runs other programs and model weights that this repository neither
+contains nor redistributes, and each of them keeps its own licence. Whoever
+installs and runs the engine, or offers its output to other people, is
+responsible for holding the rights those licences require. This file is a
+guide, not legal advice; read each licence at its source before relying on it.
+THIRD_PARTY_NOTICES.md lists every component in more detail.
+
+
+NON-COMMERCIAL DEPENDENCIES: read this before any commercial use
+----------------------------------------------------------------
+
+A working mesh-stage runtime needs three components whose licences do not
+allow commercial use. This repository does not include them, but the TRELLIS.2
+refiner runtime loads them:
+
+nvdiffrast (NVlabs/nvdiffrast)
+  Licence: NVIDIA Source Code License (1-Way Commercial).
+  Used by: ComfyUI-Trellis2 and o-voxel, which rasterise with it for every
+  textured GLB export.
+  Terms: the work may be used non-commercially, meaning for research or
+  evaluation purposes only; only NVIDIA and its affiliates may use it
+  commercially. Redistribution must be under the same licence.
+
+nvdiffrec renderer (NVlabs/nvdiffrec)
+  Licence: NVIDIA Source Code License for nvdiffrec, non-commercial.
+  Used by: a prebuilt wheel inside ComfyUI-Trellis2, imported lazily by its
+  PBR mesh renderer. As far as we can tell, the mesh stage does not reach it.
+
+MeshLib (MeshInspector/MeshLib; "meshlib" on PyPI)
+  Licence: MeshLib NON-COMMERCIAL & education LICENSE AGREEMENT.
+  Used by: ComfyUI-Trellis2, which imports it when it loads, and the TRELLIS.2
+  worker's geometry-only and refine paths (hole filling).
+  Terms: non-commercial and educational use only, with no transfer to third
+  parties. Commercial use needs a commercial licence from its authors.
+
+Anyone who uses the engine commercially, including as part of a paid or
+hosted service, must first obtain commercial terms for these components or
+replace them. They have not been replaced yet.
+
+
+GPL components the engine runs
+------------------------------
+
+This repository pins and fetches the following; it does not distribute them.
+
+ComfyUI (comfyanonymous/ComfyUI): GPL-3.0.
+  Cloned at a pinned commit into the refiner's own virtual environment. The
+  two TRELLIS.2 worker files, backend/workers/trellis2_fp8_worker.py and
+  backend/workers/trellis_refiner_worker.py, import ComfyUI modules in the
+  same Python process. No ComfyUI server is started.
+PyMeshLab (cnr-isti-vclab/PyMeshLab): GPL-3.0.
+  Imported by the TRELLIS.2 worker and by ComfyUI-Trellis2, in that same
+  environment.
+pymeshfix (pyvista/pymeshfix): GPL-3.0; the PyPI classifier for its 0.18
+  releases says AGPL-3.0.
+  The optional "meshfix" extra. Only the Instant Meshes clean method imports
+  it; the default voxel clean does not.
+Blender: GPL-2.0-or-later source, distributed as GPL-3.0 binaries.
+  Runs the engine's bpy scripts inside its own process:
+  backend/workers/blender_worker.py, unirig_bind_worker.py,
+  blender_obj_worker.py, tools/blender/*.py and several scripts/*.py. Those
+  scripts are released under the MIT License, which is compatible with the
+  GPL, as Blender's licence asks of published scripts.
+bpy 4.2: GPL-3.0.
+  Installed into UniRig's own environment by scripts/setup_unirig.sh. UniRig
+  runs as a separate program.
+
+MIT is GPL-compatible, so the engine's own code can stay MIT. Anyone who
+distributes a combined runtime takes on the GPL's obligations for that
+bundle, such as a container image holding the engine together with ComfyUI,
+PyMeshLab and Blender: licence texts and the corresponding source. They must
+also leave MeshLib out unless its authors allow the transfer.
+
+
+Model weights
+-------------
+
+No model weights are in this repository. `aismith-engine weights install`
+downloads each file at the revision, size and sha256 that
+vendor/weights.lock.json pins.
+
+  trellis2-4b-fp8                visualbruno/TRELLIS.2-4B-FP8, a repack of
+                                 microsoft/TRELLIS.2-4B                 MIT
+  trellis-image-large-ss-decoder microsoft/TRELLIS-image-large          MIT
+  dinov3-vitl16                  facebook/dinov3-vitl16-pretrain-lvd1689m
+                                 DINOv3 License: custom, gated, not OSI
+  unirig-skeleton-ar256          VAST-AI/UniRig                         MIT
+  birefnet-general,              rembg's release of ZhengPeng7/BiRefNet MIT
+  birefnet-general-lite
+
+DINOv3: before installing, accept the DINOv3 License on the model's Hugging
+Face page with your own account, and set HF_TOKEN for that account. Among other
+things, the licence governs redistribution, asks for acknowledgement in
+research publications, and carries trade-control terms and a list of
+prohibited uses. Boundless Games, LLC's own acceptance is recorded in
+LICENSES/dinov3-acceptance.md. It covers Boundless Games, LLC only.
+
+The training-data terms behind TRELLIS.2, UniRig and BiRefNet have not been
+reviewed here.
+
+Other models the studio app can use, none of them pinned or installed by this
+repository:
+  - The optional source-fidelity metrics (the "identity" extra) load
+    openai/clip-vit-large-patch14, facebook/dinov2-base (Apache-2.0) and VGG
+    weights through lpips (BSD-2-Clause) when present. Check each model card.
+  - Image preparation calls a ComfyUI server you run, with FLUX.2 [klein] base
+    4B, its VAE and the Qwen3 4B text encoder (Apache-2.0).
+  - Motion generation uses NVIDIA Kimodo, installed by hand: code
+    Apache-2.0, nvidia/Kimodo-SOMA-RP-v1.1 weights under the NVIDIA Open Model
+    License, and Meta Llama 3 8B Instruct under the Meta Llama 3 Community
+    License.
+
+
+Vendored code and assets
+------------------------
+
+trellis2cpp (vendor/trellis2cpp)
+  MIT, Copyright (c) 2026 rms80. Bundles ggml (MIT), xatlas (MIT),
+  meshoptimizer (MIT) and stb (public domain or MIT). Its scripts/hf/*/LICENSE
+  files are copies of upstream model licences, including the DINOv3 License;
+  no weights are included.
+
+Mesh2Motion (vendor/mesh2motion-app), modified by Boundless Games, LLC
+  Code: MIT, Copyright (c) 2025 Scott Petrovic (LICENSE-MIT.MD).
+  Models, rigs and animations: CC0 1.0 (LICENSE-CC0.MD), except these, which
+  need attribution when you use or share them:
+    Sophia (static/models-variation/human-sophia.glb)
+      by Tysan Tan, CC BY-SA 4.0
+    Jay, Sintel and Bunny (static/models-variation/human-jay.glb,
+      human-sintel.glb, human-bunny.glb)
+      by Blender Studio, CC BY
+    Carrot (static/models-variation/fox-cat.glb)
+      by David Revoy, CC BY
+  Two upstream directories are left out of this repository: the Mixamo test
+  rigs and the Carnegie Mellon animation sample.
+
+Skeleton template and clip store (assets/skeletons/biped)
+  Derived from Mesh2Motion's CC0 human-base-animations.glb.
+
+Test fixture images and the T-pose guide image
+  Rendered for this repository from CC0 models; the PROVENANCE.md beside each
+  set records its sources and how it was made.
+
+
+Programs and libraries the engine installs or runs
+--------------------------------------------------
+
+ComfyUI-Trellis2 (visualbruno/ComfyUI-Trellis2, git submodule): MIT,
+  Copyright (c) Microsoft Corporation. It also carries vggt/ and moge/ code
+  and prebuilt wheels that the engine does not use. One of those wheels,
+  custom_rasterizer, appears to derive from Tencent's Hunyuan3D-2, under the
+  Tencent Hunyuan 3D community licence; the engine does not import it.
+TRELLIS.2 (microsoft/TRELLIS.2): MIT.
+o-voxel, from visualbruno/TRELLIS.2: MIT; bundles Eigen (MPL-2.0).
+CuMesh (JeffreyXiang/CuMesh, and the API from visualbruno/CuMesh): MIT.
+FlexGEMM: MIT. flash-attn: BSD-3-Clause. open3d: MIT. spconv: Apache-2.0.
+rembg and onnxruntime: MIT.
+UniRig (VAST-AI-Research/UniRig): MIT.
+Instant Meshes (wjakob/instant-meshes): BSD-3-Clause style; downloaded by the
+  studio app on request.
+
+Python and JavaScript dependencies keep their own licences; see
+pyproject.toml, frontend/package-lock.json and
+vendor/mesh2motion-app/package-lock.json. jszip is dual-licensed and used under
+MIT. sharp (LGPL-3.0 libvips) is a build-time dependency of Mesh2Motion only.

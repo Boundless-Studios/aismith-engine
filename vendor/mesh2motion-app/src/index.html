@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title style="display: none">Explore - Mesh2Motion</title>
+    <link rel="icon" type="image/png" href="./images/favicon.png"/>
+    <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0">
+    <!-- Script files-->
+    <script type="module" src="./marketing/MarketingBootstrap.ts"></script>
+
+    <!-- Stylesheets-->
+    <link href="./styles.css" rel="stylesheet" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./radio-button-group.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./animation-player.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./dialog.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./settings-dropdown.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./marketing/marketing.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./offline.css" crossorigin="anonymous" />
+
+    <nav>
+        <div style="display: inline-flex; align-items: center;">
+            <a id="logo-branding" href="https://mesh2motion.org">
+                <img src="./images/mesh2motion.svg" width="130" alt="Mesh2Motion logo" />
+            </a>
+            <span class="active-nav-item">Explore</span>
+            <a href="/create.html">Use Your Model</a>
+            <a href="/retarget/index.html">Use Your Rigged Model</a>
+        </div>
+
+        <div style="display: inline-flex; align-items: center;">
+            <div id="top-nav-links-mount"></div>
+        </div>
+    </nav>
+
+    <div id="header-ui-mount"></div>
+
+    <div class="model-selection-section">
+        <!-- populated dynamically from RigConfig -->
+    </div>
+
+
+    <div id="tool-panel">
+        <!-- create a radio button group. There are two options. Move Skeleton, Rotate Mesh -->
+        <div id="tool-selection-group">
+           
+                <!-- <div style="margin-bottom: 1rem; padding: 0;">
+
+                    <span id="current-step-label"></span>
+                </div> -->
+
+                <div id="load-skeleton-tools">
+
+                    <span>
+                        <span style="max-width: 220px">Rotate Model to face front <br/> (blue origin line)</span>
+                        <div style="display: flex; flex-direction: row">
+                            <button class="secondary-button" id="rotate-model-x-button">X</button>
+                            <button class="secondary-button" id="rotate-model-y-button">Y</button>
+                            <button class="secondary-button" id="rotate-model-z-button">Z</button>
+                        </div>
+                    </span>
+
+
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <span>Skeleton template:</span>
+                            <select id="skeleton-selection">
+                                <!-- populated dynamically from RigConfig -->
+                            </select>
+                        </div>
+
+                </div>
+
+
+            <span id="skeleton-step-actions">
+
+                <!-- back to load skeleton -->
+                 <div class="display: flex; gap: 0.5rem;">
+                     <button class="no-style-button" id="action_back_to_load_skeleton" >&#x2039; Back</button>
+                     <button id="action_bind_pose" >Bind pose</button>
+                 </div>
+
+            </span>
+
+            <!-- model variation switcher-->
+            <div id="model-variation-switcher">
+                <div id="model-variation-info">
+                    <img id="model-variation-info-image" src="" alt="" />
+                    <div id="model-variation-info-details">
+                        <span style="display: flex; flex-direction: row; gap: 0.5rem;">
+                            <span id="model-variation-info-name"></span>
+                            
+                        </span>
+                        <span>
+                            <span id="model-variation-info-attribution"></span> 
+                            <span id="model-variation-info-license" class="variation-license-chip"></span> 
+                        </span>
+                                             
+                    </div>
+                </div>
+                <button id="model-variation-button" class="secondary-button">Change</button>
+            </div>
+
+    
+
+            <span id="skinned-step-animation-export-options">
+
+                <div id="animations-listing">
+
+                    <!-- Filter textbox and tab switcher side by side -->
+                    <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                        <!-- Tab switcher for Library vs Selected animations -->
+                        <div class="pill-switch-group" aria-label="Animation view mode" style="margin: 0;">
+                            <div class="pill-switch">
+                                <input type="radio" id="animation-view-library" name="animation-view-mode" value="library" checked />
+                                <label for="animation-view-library">Library</label>
+                                <input type="radio" id="animation-view-selected" name="animation-view-mode" value="selected" />
+                                <label for="animation-view-selected">Selected</label>
+                            </div>
+                        </div>
+
+                        <!-- Filter textbox for animations -->
+                        <span style="position: relative; flex: 1;">
+                            <input type="text" id="animation-filter" placeholder="Filter">
+                        </span>
+                    </div>
+                    
+                    <!-- Select all / Deselect all button and animation count -->
+                    <div id="toggle-select-all-container">
+                        <button id="toggle-select-all-animations" class="secondary-button">Select All</button>
+                        <div id="animation-listing-count" style="white-space: nowrap;">0 animations</div>
+                    </div>
+                    
+
+                    <!-- loading progress when animations start getting larger. -->
+                    <div id="animation-progress-loader-container" style="display: none">
+                        <div id="loading-status-text">Loading animation data</div>
+                        <div id="loading-progress-bar"></div>
+                        <div id="current-file-progress-bar"></div>
+                    </div>
+       
+        
+                    <!-- javascript will populate this item with animations
+                         that we get from the animations file(s)  -->
+                    <div id="animations-items"> </div> 
+
+       
+       
+
+                    <div class="download-actions-row">
+                        
+                        <!-- testing the mirroring options. Hide this for now until we get a better implementation for per animations -->
+                        <div style="display: none" class="styled-checkbox icon-toggle">
+                            <input type="checkbox" id="mirror-animations-checkbox" name="mirror-animations" value="true" style="display:none;">
+                            <label for="mirror-animations-checkbox" data-tippy-content="Mirror animations"  tabindex="0">
+                                <img class="action-icon" src="images/icons/mirror.svg" alt="Mirror animations" />
+                            </label>
+                        </div>
+
+                        <button class="secondary-button" id="import-animations-button" data-tippy-content="Import GLB animations. Only Mesh2Motion rigs are supported at this time." aria-label="Import GLB animations. Only Mesh2Motion rigs are supported at this time.">
+                            <img src="images/icons/upload.svg" alt="Upload" width="20" height="20" />
+                        </button>
+                        <input id="import-animations-input" type="file" accept=".glb" multiple style="display:none" />
+
+                        <div class="download-combo">
+                            <button id="export-button" data-tippy-content="Exporting will combine all animations into a single GLB file.">
+                                <span class="button-icon-group">
+                                   <img src="images/icons/download.svg" alt="Download" width="16" height="16" />
+                                   <span>Download <span id="animation-selection-count">0</span></span>
+                                </span>
+                            </button>
+
+                            <div id="download-settings-popup" class="download-settings-popup-container">
+                                <button
+                                    id="download-settings-toggle"
+                                    class="download-split-toggle"
+                                    type="button"
+                                    aria-haspopup="dialog"
+                                    aria-expanded="false"
+                                    aria-controls="download-settings"
+                                    data-tippy-content="Download options"
+                                    aria-label="Open download options"
+                                >
+
+                                <img src="images/icons/arrow-dropdown.svg" alt="dropdown" width="16" height="16" />
+
+                                </button>
+
+                                <div id="download-settings" class="download-settings-panel" role="dialog" aria-label="Download settings" hidden>
+                                    <span class="download-settings-header">Download Options</span>
+
+                                    <div id="download-bone-naming-section" class="options-container">
+                                        <span class="download-settings-label">Bone Names</span>
+                                        <fieldset id="download-bone-naming-group" class="toggle" aria-label="Bone naming structure">
+                                            <input type="radio" id="bone-naming-default" name="bone-naming-structure" value="default" checked>
+                                            <label for="bone-naming-default">Default</label>
+
+                                            <input type="radio" id="bone-naming-mixamo" name="bone-naming-structure" value="mixamo">
+                                            <label for="bone-naming-mixamo">Mixamo</label>
+                                        </fieldset>
+                                    </div>
+
+                                    <div class="options-container">
+                                        <span class="download-settings-label">Contents</span>
+                                        <fieldset id="download-export-contents-group" class="toggle" aria-label="Export contents">
+                                            <input type="radio" id="export-contents-full" name="export-contents" value="full" checked>
+                                            <label for="export-contents-full">Default</label>
+
+                                            <input type="radio" id="export-contents-skeleton" name="export-contents" value="skeleton">
+                                            <label for="export-contents-skeleton">Skeleton + Animations</label>
+                                        </fieldset>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <a id="download-hidden-link" href="#" style="display:none"></a>
+                    </div>
+
+
+       
+                </div>
+        
+               
+            </span>
+
+
+        </div>
+
+    </div> <!-- end tool-panel-->
+
+    <div id="animation-player-mount"></div>
+
+
+    <!-- 3d view control hit box. It is just a container to help with 3d view controls. -->
+    <div id="view-control-hitbox"></div>
+
+
+    <!-- build version information-->
+    <span id="build-version"></span>
+
+            <!-- model variation confirmation dialog (hidden by default) -->
+            <div id="variation-dialog-overlay" class="modal-dialog-overlay" style="display: none">
+                <div class="modal-dialog-content variation-dialog">
+                    <h2>Choose Model</h2>
+                    <div id="variation-grid" class="variation-grid">
+                        <!-- cards populated dynamically from RigConfig -->
+                    </div>
+                    <div id="variation-loading-container" class="variation-loading-container" style="display: none">
+                        <div class="variation-loading-track">
+                            <span id="variation-loading-text" class="variation-loading-text">Loading model…</span>
+                            <div id="variation-loading-bar" class="variation-loading-bar"></div>
+                        </div>
+                        
+                    </div>
+                    <div class="variation-dialog-buttons">
+                        <button id="variation-cancel-button" class="secondary-button">Cancel</button>
+                        <button id="variation-confirm-button" disabled>Replace Model</button>
+                    </div>
+                </div>
+            </div>
+
+</body>
+</html>

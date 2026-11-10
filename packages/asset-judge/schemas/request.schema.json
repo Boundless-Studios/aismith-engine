@@ -1,0 +1,236 @@
+{
+  "$defs": {
+    "Artifact": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minLength": 1,
+          "title": "Revision",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "parents": {
+          "default": [],
+          "items": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Parents",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "sha256"
+      ],
+      "title": "Artifact",
+      "type": "object"
+    },
+    "Criterion": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "threshold": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "blocking": {
+          "default": true,
+          "title": "Blocking",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "threshold"
+      ],
+      "title": "Criterion",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "uri": {
+          "minLength": 1,
+          "title": "Uri",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "artifact_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Artifact Sha256",
+          "type": "string"
+        },
+        "producer": {
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        },
+        "producer_version": {
+          "minLength": 1,
+          "title": "Producer Version",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "image",
+            "video",
+            "report",
+            "source",
+            "reference"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "canonical",
+            "adversarial",
+            "structural",
+            "aesthetic",
+            "technical"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "camera_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Camera Id"
+        }
+      },
+      "required": [
+        "id",
+        "uri",
+        "sha256",
+        "artifact_sha256",
+        "producer",
+        "producer_version",
+        "kind",
+        "role"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "artifact": {
+      "$ref": "#/$defs/Artifact"
+    },
+    "scope": {
+      "enum": [
+        "asset",
+        "region",
+        "scene"
+      ],
+      "title": "Scope",
+      "type": "string"
+    },
+    "target": {
+      "minLength": 1,
+      "title": "Target",
+      "type": "string"
+    },
+    "rubric_version": {
+      "minLength": 1,
+      "title": "Rubric Version",
+      "type": "string"
+    },
+    "criteria": {
+      "items": {
+        "$ref": "#/$defs/Criterion"
+      },
+      "minItems": 1,
+      "title": "Criteria",
+      "type": "array"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/Evidence"
+      },
+      "minItems": 1,
+      "title": "Evidence",
+      "type": "array"
+    },
+    "conditions": {
+      "additionalProperties": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minProperties": 1,
+      "title": "Conditions",
+      "type": "object"
+    },
+    "canonical_cameras": {
+      "default": [],
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Canonical Cameras",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "artifact",
+    "scope",
+    "target",
+    "rubric_version",
+    "criteria",
+    "evidence",
+    "conditions"
+  ],
+  "title": "Request",
+  "type": "object"
+}

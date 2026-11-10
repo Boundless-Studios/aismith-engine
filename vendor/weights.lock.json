@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "weights": [
+    {
+      "id": "trellis2-4b-fp8",
+      "source": "huggingface",
+      "repository": "visualbruno/TRELLIS.2-4B-FP8",
+      "revision": "b867be02d3dd9a73f460b576f12d44e9bdd4a370",
+      "root": "trellis_models",
+      "licence": "MIT",
+      "stage": "mesh",
+      "gated": false,
+      "files": [
+        {
+          "path": "ckpts_fp8/shape_dec_next_dc_f16c32_fp8.json",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/shape_dec_next_dc_f16c32_fp8.json",
+          "size": 677,
+          "sha256": "92c50da1ab2b648e939134b0edaae9d4508ba6da25c788af6e01dc26a84e74db"
+        },
+        {
+          "path": "ckpts_fp8/shape_dec_next_dc_f16c32_fp8.safetensors",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/shape_dec_next_dc_f16c32_fp8.safetensors",
+          "size": 474260183,
+          "sha256": "5e35ea6c90744b824c01df16bbd33b415e7d9d93307bf50b33d5e8438f286a16"
+        },
+        {
+          "path": "ckpts_fp8/shape_enc_next_dc_f16c32_fp8.json",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/shape_enc_next_dc_f16c32_fp8.json",
+          "size": 652,
+          "sha256": "97dc6fdd2e11593cf1680a67b37f584c3da290a0ca48375d9169e872d66d8c7a"
+        },
+        {
+          "path": "ckpts_fp8/shape_enc_next_dc_f16c32_fp8.safetensors",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/shape_enc_next_dc_f16c32_fp8.safetensors",
+          "size": 354412832,
+          "sha256": "cdffcb21560406b5cc4765677276594e20a6f50b6c34386dbf20e7380ee275da"
+        },
+        {
+          "path": "ckpts_fp8/slat_flow_img2shape_dit_1_3B_1024_fp8.json",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/slat_flow_img2shape_dit_1_3B_1024_fp8.json",
+          "size": 463,
+          "sha256": "d1ecce7782a81f1f40ad5505ead5bfedeb753309112f103417624ab27d16f378"
+        },
+        {
+          "path": "ckpts_fp8/slat_flow_img2shape_dit_1_3B_1024_fp8.safetensors",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/slat_flow_img2shape_dit_1_3B_1024_fp8.safetensors",
+          "size": 1292322056,
+          "sha256": "b7f02263bda9c43614867dbea5e65da8947d575d93fc48942e81e020852034c1"
+        },
+        {
+          "path": "ckpts_fp8/slat_flow_img2shape_dit_1_3B_512_fp8.json",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/slat_flow_img2shape_dit_1_3B_512_fp8.json",
+          "size": 463,
+          "sha256": "d64c99dfe50e0486da6aff361443c40e321781256337a901959ef5278a287fae"
+        },
+        {
+          "path": "ckpts_fp8/slat_flow_img2shape_dit_1_3B_512_fp8.safetensors",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/slat_flow_img2shape_dit_1_3B_512_fp8.safetensors",
+          "size": 1292322056,
+          "sha256": "b7e36a62039534cea42873c7366654941549df14879a971e5a73f618130f2aba"
+        },
+        {
+          "path": "ckpts_fp8/slat_flow_imgshape2tex_dit_1_3B_1024_fp8.json",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/slat_flow_imgshape2tex_dit_1_3B_1024_fp8.json",
+          "size": 463,
+          "sha256": "25d2adcdd92bce095dfece3f8a8cae9c2352ff406541edb9a281cab4a7b02427"
+        },
+        {
+          "path": "ckpts_fp8/slat_flow_imgshape2tex_dit_1_3B_1024_fp8.safetensors",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/slat_flow_imgshape2tex_dit_1_3B_1024_fp8.safetensors",
+          "size": 1292371208,
+          "sha256": "456af26a07859cf1f21d9f9cd9585ac4e2242b2d46d164c3fd1d86101cbc7dd9"
+        },
+        {
+          "path": "ckpts_fp8/slat_flow_imgshape2tex_dit_1_3B_512_fp8.json",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/slat_flow_imgshape2tex_dit_1_3B_512_fp8.json",
+          "size": 463,
+          "sha256": "4bfddb08eeaccda4950b783c3570d871a85366c03e59a95f6256a2e87f8bd6be"
+        },
+        {
+          "path": "ckpts_fp8/slat_flow_imgshape2tex_dit_1_3B_512_fp8.safetensors",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/slat_flow_imgshape2tex_dit_1_3B_512_fp8.safetensors",
+          "size": 1292371208,
+          "sha256": "fa8aa4d95e5e08b8c9aa45d51b2c2bde014ecaa2718d7eab6691e1a593631ce1"
+        },
+        {
+          "path": "ckpts_fp8/ss_flow_img_dit_1_3B_64_fp8.json",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/ss_flow_img_dit_1_3B_64_fp8.json",
+          "size": 472,
+          "sha256": "5c7da4b2629e1a0865970f2b07d1e947764233eb96b255681ffd40234fc87513"
+        },
+        {
+          "path": "ckpts_fp8/ss_flow_img_dit_1_3B_64_fp8.safetensors",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/ss_flow_img_dit_1_3B_64_fp8.safetensors",
+          "size": 1292248304,
+          "sha256": "4f3608e9e11ec1c5c44dd0eba9312de372b576efac0cb73b788f674b91fba0da"
+        },
+        {
+          "path": "ckpts_fp8/tex_dec_next_dc_f16c32_fp8.json",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/tex_dec_next_dc_f16c32_fp8.json",
+          "size": 704,
+          "sha256": "c45023bb2ce6c22fd65c793c66f2e09edd7cf53b15a6c121cf807e733841bb89"
+        },
+        {
+          "path": "ckpts_fp8/tex_dec_next_dc_f16c32_fp8.safetensors",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/tex_dec_next_dc_f16c32_fp8.safetensors",
+          "size": 474243926,
+          "sha256": "0f662e53871ca7dcba62f8742a8cf83a619123079a14b2587daf520706e59ba3"
+        },
+        {
+          "path": "ckpts_fp8/tex_enc_next_dc_f16c32_fp8.json",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/tex_enc_next_dc_f16c32_fp8.json",
+          "size": 675,
+          "sha256": "d1be4aa383a0c113e26a384b402195d355870cb0bc65b8404a6d532d59c7b303"
+        },
+        {
+          "path": "ckpts_fp8/tex_enc_next_dc_f16c32_fp8.safetensors",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/ckpts_fp8/tex_enc_next_dc_f16c32_fp8.safetensors",
+          "size": 354412832,
+          "sha256": "5433d6db894d7da0000a79df10d7bfe472da5dd7376d8b3f37c92cd248ba4037"
+        },
+        {
+          "path": "pipeline_fp8.json",
+          "dest": "visualbruno/TRELLIS.2-4B-FP8/pipeline_fp8.json",
+          "size": 4207,
+          "sha256": "9bab718bdbb23618766068db673a4fc34c0c52e72e034213f6c75556001321e0"
+        }
+      ]
+    },
+    {
+      "id": "trellis-image-large-ss-decoder",
+      "source": "huggingface",
+      "repository": "microsoft/TRELLIS-image-large",
+      "revision": "25e0d31ffbebe4b5a97464dd851910efc3002d96",
+      "root": "trellis_models",
+      "licence": "MIT",
+      "stage": "mesh",
+      "gated": false,
+      "files": [
+        {
+          "path": "ckpts/ss_dec_conv3d_16l8_fp16.json",
+          "dest": "microsoft/TRELLIS-image-large/ckpts/ss_dec_conv3d_16l8_fp16.json",
+          "size": 245,
+          "sha256": "646781293f1cda74720de85d1cef50a957fb4aebd9a4bd014e454e32f2330ac5"
+        },
+        {
+          "path": "ckpts/ss_dec_conv3d_16l8_fp16.safetensors",
+          "dest": "microsoft/TRELLIS-image-large/ckpts/ss_dec_conv3d_16l8_fp16.safetensors",
+          "size": 147591972,
+          "sha256": "1c76d4a40519aa2d711cc263a8404105231ac26db31d946bed48b84fee79009a"
+        }
+      ]
+    },
+    {
+      "id": "dinov3-vitl16",
+      "source": "huggingface",
+      "repository": "facebook/dinov3-vitl16-pretrain-lvd1689m",
+      "revision": "ea8dc2863c51be0a264bab82070e3e8836b02d51",
+      "root": "trellis_models",
+      "licence": "DINOv3 License (custom, gated)",
+      "stage": "mesh",
+      "gated": true,
+      "files": [
+        {
+          "path": "config.json",
+          "dest": "facebook/dinov3-vitl16-pretrain-lvd1689m/config.json",
+          "size": 745,
+          "sha256": "135ecd23e34a70b6fbed8b083fdecb319b7e3a54e3d849258bbe4ddcf1783bb5",
+          "sha256_source": "hashed read-only from a working install, 2026-11-02 (sizes matched the lock)"
+        },
+        {
+          "path": "model.safetensors",
+          "dest": "facebook/dinov3-vitl16-pretrain-lvd1689m/model.safetensors",
+          "size": 1212559808,
+          "sha256": "dcb2e45127cccbf1601e5f42fef165eea275c8e5213197e8dcf3f48822718179",
+          "sha256_source": "hashed read-only from a working install, 2026-11-02 (sizes matched the lock)"
+        },
+        {
+          "path": "preprocessor_config.json",
+          "dest": "facebook/dinov3-vitl16-pretrain-lvd1689m/preprocessor_config.json",
+          "size": 585,
+          "sha256": "960c41d1f3a7778b936365769a2d90550b318a6c0a53a0296957adacfe5e0dd7",
+          "sha256_source": "hashed read-only from a working install, 2026-11-02 (sizes matched the lock)"
+        }
+      ],
+      "licence_acceptance": {
+        "licensee": "Boundless Games, LLC",
+        "statement": "Boundless Games, LLC has accepted the DINOv3 License for facebook/dinov3-vitl16-pretrain-lvd1689m on Hugging Face.",
+        "recorded_in": "LICENSES/dinov3-acceptance.md",
+        "recorded_by": "Boundless Games, LLC",
+        "recorded_at": "2026-11-07T00:17:48Z"
+      }
+    },
+    {
+      "id": "unirig-skeleton-ar256",
+      "source": "huggingface",
+      "repository": "VAST-AI/UniRig",
+      "revision": "36842e2b5947e9e60f89275b83208c8e74071c63",
+      "root": "unirig",
+      "licence": "MIT",
+      "stage": "rig",
+      "gated": false,
+      "files": [
+        {
+          "path": "skeleton/articulation-xl_quantization_256/model.ckpt",
+          "dest": "experiments/skeleton/articulation-xl_quantization_256/model.ckpt",
+          "size": 1439617174,
+          "sha256": "d8cf9b42d56e7bc316d293597ecf8c4c39a8631cdd44a261ecf388242fabd0f4"
+        }
+      ]
+    },
+    {
+      "id": "birefnet-general",
+      "source": "url",
+      "root": "u2net",
+      "licence": "MIT",
+      "stage": "mesh",
+      "gated": false,
+      "note": "rembg==2.0.81 pins this file by md5 and skips the download when it is present at <U2NET_HOME>/models/<name>/<name>.onnx",
+      "files": [
+        {
+          "url": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/BiRefNet-general-epoch_244.onnx",
+          "dest": "models/birefnet-general/birefnet-general.onnx",
+          "size": 972666916,
+          "md5": "7a35a0141cbbc80de11d9c9a28f52697",
+          "sha256": "58f621f00f5d756097615970a88a791584600dcf7c45b18a0a6267535a1ebd3c",
+          "sha256_source": "hashed read-only from a working install, 2026-11-02 (sizes matched the lock)"
+        }
+      ]
+    },
+    {
+      "id": "birefnet-general-lite",
+      "source": "url",
+      "root": "u2net",
+      "licence": "MIT",
+      "stage": "mesh",
+      "gated": false,
+      "note": "rembg==2.0.81 pins this file by md5 and skips the download when it is present at <U2NET_HOME>/models/<name>/<name>.onnx",
+      "files": [
+        {
+          "url": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx",
+          "dest": "models/birefnet-general-lite/birefnet-general-lite.onnx",
+          "size": 224005088,
+          "md5": "4fab47adc4ff364be1713e97b7e66334",
+          "sha256": "5600024376f572a557870a5eb0afb1e5961636bef4e1e22132025467d0f03333",
+          "sha256_source": "hashed read-only from a working install, 2026-11-02 (sizes matched the lock)"
+        }
+      ]
+    }
+  ]
+}

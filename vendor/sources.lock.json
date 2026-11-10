@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "note": "Every third-party source the engine builds or loads, pinned by commit. Entries with a vendor_path are git submodules; the gitlink in the index must equal the commit here. The rest are cloned at install time and checked out detached at the commit.",
+  "sources": [
+    {
+      "name": "comfyui",
+      "repository": "https://github.com/comfyanonymous/ComfyUI.git",
+      "commit": "2f35f4a08176d993cded35dac3332be4f7287f41",
+      "ref": "v0.33.0",
+      "licence": "GPL-3.0",
+      "used_by": "TRELLIS.2 refiner runtime: the ComfyUI-Trellis2 node classes are imported in-process (no server)",
+      "verified": "matches the qualified refiner runtime (comfyui_version.py 0.33.0, installed from the master.zip archive, read 2026-11-02); not yet exercised through the engine entry point"
+    },
+    {
+      "name": "comfyui-trellis2",
+      "repository": "https://github.com/visualbruno/ComfyUI-Trellis2.git",
+      "commit": "438fe4e2a15bd29620a1cedad0a87c5afad6f81d",
+      "licence": "MIT",
+      "vendor_path": "vendor/ComfyUI-Trellis2",
+      "used_by": "mesh stage: TRELLIS.2 FP8 generate, refine and texturing nodes, and their prebuilt CUDA wheels"
+    },
+    {
+      "name": "cumesh",
+      "repository": "https://github.com/JeffreyXiang/CuMesh.git",
+      "commit": "12289e1062f0603f2f0d0771b02e1395d247f26f",
+      "licence": "MIT",
+      "used_by": "backend/workers/install_trellis2_native.py: CuMesh binary built for the local CUDA arch"
+    },
+    {
+      "name": "cumesh-api",
+      "repository": "https://github.com/visualbruno/CuMesh.git",
+      "commit": "d10e54c30ddd03d11472c1431693f985501c7966",
+      "licence": "MIT",
+      "used_by": "backend/workers/install_trellis2_native.py: the CuMesh Python API the wrapper expects"
+    },
+    {
+      "name": "trellis2",
+      "repository": "https://github.com/visualbruno/TRELLIS.2.git",
+      "commit": "65d1e13b4a92296036044df0633242bb9e95abf6",
+      "licence": "MIT",
+      "used_by": "backend/workers/install_trellis2_native.py: o-voxel built for the local CUDA arch"
+    },
+    {
+      "name": "unirig",
+      "repository": "https://github.com/VAST-AI-Research/UniRig.git",
+      "commit": "6793c6640ff01c8fb389f3993434124bb43d2933",
+      "licence": "MIT",
+      "used_by": "rig stage: skeleton prediction (scripts/setup_unirig.sh installs it into vendor/unirig or UNIRIG_DIR)",
+      "verified": "main as of 2026-06-04, the latest upstream commit; setup used --depth 1 of main before this pin"
+    }
+  ]
+}

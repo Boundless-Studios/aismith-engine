@@ -1,0 +1,24 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+filelock>=3.15
+pillow>=10.0
+trimesh>=4.4
+pygltflib>=1.16
+numpy>=1.26
+requests>=2.32
+mcp>=1.2,<2
+tqdm>=4.66
+huggingface_hub>=0.24
+scipy>=1.11
+networkx>=3.2
+
+# Identity metrics for the source-fidelity gate (CLIP-I / DINOv2 / LPIPS).
+# Optional at runtime: source_fidelity reports None plus a metric_warnings
+# entry when these -- or their cached weights -- are missing, and that gate
+# never fails on a missing metric.
+transformers>=4.40
+lpips>=0.1.4
+
+# Optional, GPL-3.0: MeshFix hole repair for the Instant Meshes clean method.
+# Install it yourself if you use that method: pip install "pymeshfix>=0.17"

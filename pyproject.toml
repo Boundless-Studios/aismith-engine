@@ -1,0 +1,55 @@
+[project]
+name = "aismith-engine"
+version = "0.2.1"
+description = "AISmith-3D: the 3D engine behind Magic Studios (image to mesh, clean, rig, animate)."
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "python-multipart>=0.0.9",
+  "filelock>=3.15",
+  "pillow>=10.0",
+  "numpy>=1.26",
+  "trimesh>=4.4",
+  "pygltflib>=1.16",
+  "requests>=2.32",
+  "mcp>=1.2,<2",
+  # Imported directly; previously arrived only through the identity extra.
+  "tqdm>=4.66",
+  "huggingface_hub>=0.24",
+  "scipy>=1.11",
+  "networkx>=3.2",
+]
+
+# Kept out of the base install: these pull torch. source_fidelity degrades to
+# None + a metric_warnings entry without them.
+[project.optional-dependencies]
+identity = [
+  "transformers>=4.40",
+  "lpips>=0.1.4",
+]
+# MeshFix hole repair for the optional Instant Meshes clean method. pymeshfix
+# is GPL-3.0 (its PyPI classifier for 0.18 says AGPL-3.0), so it stays out of
+# the base install; the default voxel clean never imports it. See NOTICE.
+meshfix = [
+  "pymeshfix>=0.17",
+]
+test = [
+  "pytest>=8",
+  "httpx>=0.27",
+]
+
+[project.scripts]
+aismith-engine = "backend.engine.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["backend*"]
+
+# CI lint: syntax errors and undefined names only. Widen deliberately.
+[tool.ruff.lint]
+select = ["E9", "F63", "F7", "F82"]

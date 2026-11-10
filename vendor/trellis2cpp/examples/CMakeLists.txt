@@ -1,0 +1,34 @@
+# Example: inspect a .dinodata DINOv3 conditioning file.
+add_executable(dino_info dino_info.cpp)
+target_link_libraries(dino_info PRIVATE trellis2)
+target_compile_features(dino_info PRIVATE cxx_std_14)
+
+# Example: inspect a converted SS-flow DiT GGUF (hparams + tensor inventory).
+add_executable(ss_flow_info ss_flow_info.cpp)
+target_link_libraries(ss_flow_info PRIVATE trellis2)
+target_compile_features(ss_flow_info PRIVATE cxx_std_14)
+
+# Example: stage-1 sampling, .dinodata cond -> sparse-structure latent z_s.
+add_executable(ss_sample ss_sample.cpp)
+target_link_libraries(ss_sample PRIVATE trellis2)
+target_compile_features(ss_sample PRIVATE cxx_std_14)
+
+# Example: stage-1 decoding, z_s latent -> occupancy logit grid (64^3).
+add_executable(ss_decode ss_decode.cpp)
+target_link_libraries(ss_decode PRIVATE trellis2)
+target_compile_features(ss_decode PRIVATE cxx_std_14)
+
+# Example: decode + extract the occupancy isosurface as an OBJ (marching cubes).
+add_executable(ss_mesh ss_mesh.cpp)
+target_link_libraries(ss_mesh PRIVATE trellis2)
+target_compile_features(ss_mesh PRIVATE cxx_std_14)
+
+# Example: image -> preprocessed 512x512 -> DINOv3 conditioning (.dinodata).
+add_executable(dino_encode dino_encode.cpp)
+target_link_libraries(dino_encode PRIVATE trellis2)
+target_compile_features(dino_encode PRIVATE cxx_std_14)
+
+# Example: export a demo mesh (T2MESH01/02/03) into a portable GLB (no GPU).
+add_executable(mesh2glb mesh2glb.cpp)
+target_link_libraries(mesh2glb PRIVATE trellis2)
+target_compile_features(mesh2glb PRIVATE cxx_std_14)

@@ -1,0 +1,70 @@
+fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: anchor-center;
+    gap: 0.2rem;
+    flex-direction: column;
+}
+
+.toggle {
+  box-sizing: border-box;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+/* hide the actual radio button input elements */
+.toggle input {
+  width: 0;
+  height: 0;
+  position: absolute;
+  left: -9999px;
+}
+
+/* main default style for the elements */
+.toggle input + label {
+  padding: .25rem 0.5rem;
+  padding-top: 0.5rem;
+  border: solid 2px var(--radio-button-group-bg);
+  font-size: 1rem;
+  transition: border-color .15s ease-out, 
+              color .25s ease-out, 
+              background-color .15s ease-out,
+              box-shadow .15s ease-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* border radius for first and last elements */
+.toggle input + label:first-of-type {
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+}
+.toggle input + label:last-of-type {
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+
+/* border color when hovering over the element */
+.toggle input:hover + label {
+  border-color: var(--radio-button-group-bg);
+  background: var(--radio-button-group-hover);
+}
+
+/* active state */
+.toggle input:checked + label {
+  background-color: var(--radio-button-group-bg);
+  color: #FFF;
+  border-color: var(--radio-button-group-bg);
+  z-index: 1;
+}
+
+/* checkbox icon for selected state */
+.toggle input:checked + label::before {
+  content: "✓";
+  font-weight: bold;
+}

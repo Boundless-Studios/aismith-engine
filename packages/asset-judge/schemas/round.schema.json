@@ -1,0 +1,691 @@
+{
+  "$defs": {
+    "Artifact": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minLength": 1,
+          "title": "Revision",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "parents": {
+          "default": [],
+          "items": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Parents",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "sha256"
+      ],
+      "title": "Artifact",
+      "type": "object"
+    },
+    "Criterion": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "threshold": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "blocking": {
+          "default": true,
+          "title": "Blocking",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "threshold"
+      ],
+      "title": "Criterion",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "uri": {
+          "minLength": 1,
+          "title": "Uri",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "artifact_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Artifact Sha256",
+          "type": "string"
+        },
+        "producer": {
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        },
+        "producer_version": {
+          "minLength": 1,
+          "title": "Producer Version",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "image",
+            "video",
+            "report",
+            "source",
+            "reference"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "canonical",
+            "adversarial",
+            "structural",
+            "aesthetic",
+            "technical"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "camera_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Camera Id"
+        }
+      },
+      "required": [
+        "id",
+        "uri",
+        "sha256",
+        "artifact_sha256",
+        "producer",
+        "producer_version",
+        "kind",
+        "role"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "criterion_id": {
+          "minLength": 1,
+          "title": "Criterion Id",
+          "type": "string"
+        },
+        "blocking": {
+          "title": "Blocking",
+          "type": "boolean"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "suggested_actions": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Suggested Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "criterion_id",
+        "blocking",
+        "message",
+        "evidence_ids"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "HumanResolution": {
+      "additionalProperties": false,
+      "properties": {
+        "request_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Request Sha256",
+          "type": "string"
+        },
+        "reviewer": {
+          "minLength": 1,
+          "title": "Reviewer",
+          "type": "string"
+        },
+        "record_uri": {
+          "minLength": 1,
+          "title": "Record Uri",
+          "type": "string"
+        },
+        "record_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Record Sha256",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "pass",
+            "revise"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "rationale": {
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "resolved_finding_ids": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Resolved Finding Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "request_sha256",
+        "reviewer",
+        "record_uri",
+        "record_sha256",
+        "decision",
+        "rationale"
+      ],
+      "title": "HumanResolution",
+      "type": "object"
+    },
+    "Identity": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "prompt_version": {
+          "minLength": 1,
+          "title": "Prompt Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "version",
+        "prompt_version"
+      ],
+      "title": "Identity",
+      "type": "object"
+    },
+    "Outcome": {
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "pass",
+            "revise",
+            "needs_adjudication",
+            "human_review"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "blocking_findings": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "title": "Blocking Findings",
+          "type": "array"
+        },
+        "nonblocking_findings": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "title": "Nonblocking Findings",
+          "type": "array"
+        },
+        "suggested_actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Suggested Actions",
+          "type": "array"
+        },
+        "human_art_acceptance": {
+          "const": false,
+          "default": false,
+          "title": "Human Art Acceptance",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "state",
+        "reasons"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    },
+    "Policy": {
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "$ref": "#/$defs/Identity"
+        },
+        "secondary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "adjudicator": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_confidence": {
+          "default": 0.7,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Min Confidence",
+          "type": "number"
+        },
+        "score_disagreement": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Score Disagreement",
+          "type": "number"
+        },
+        "plateau_window": {
+          "default": 3,
+          "minimum": 3,
+          "title": "Plateau Window",
+          "type": "integer"
+        },
+        "plateau_epsilon": {
+          "default": 0.05,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Plateau Epsilon",
+          "type": "number"
+        },
+        "persistence_window": {
+          "default": 3,
+          "minimum": 2,
+          "title": "Persistence Window",
+          "type": "integer"
+        },
+        "max_rounds": {
+          "default": 8,
+          "minimum": 3,
+          "title": "Max Rounds",
+          "type": "integer"
+        },
+        "adversarial_after": {
+          "default": 2,
+          "minimum": 2,
+          "title": "Adversarial After",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "primary"
+      ],
+      "title": "Policy",
+      "type": "object"
+    },
+    "Request": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "artifact": {
+          "$ref": "#/$defs/Artifact"
+        },
+        "scope": {
+          "enum": [
+            "asset",
+            "region",
+            "scene"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        },
+        "rubric_version": {
+          "minLength": 1,
+          "title": "Rubric Version",
+          "type": "string"
+        },
+        "criteria": {
+          "items": {
+            "$ref": "#/$defs/Criterion"
+          },
+          "minItems": 1,
+          "title": "Criteria",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "conditions": {
+          "additionalProperties": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minProperties": 1,
+          "title": "Conditions",
+          "type": "object"
+        },
+        "canonical_cameras": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Canonical Cameras",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "artifact",
+        "scope",
+        "target",
+        "rubric_version",
+        "criteria",
+        "evidence",
+        "conditions"
+      ],
+      "title": "Request",
+      "type": "object"
+    },
+    "Result": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "request_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Request Sha256",
+          "type": "string"
+        },
+        "judge": {
+          "$ref": "#/$defs/Identity"
+        },
+        "execution_id": {
+          "minLength": 1,
+          "title": "Execution Id",
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "revise",
+            "abstain"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "scores": {
+          "additionalProperties": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Scores",
+          "type": "object"
+        },
+        "findings": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "suggested_actions": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Suggested Actions",
+          "type": "array"
+        },
+        "rationale": {
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "resolved_finding_ids": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Resolved Finding Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "request_sha256",
+        "judge",
+        "execution_id",
+        "verdict",
+        "confidence",
+        "scores",
+        "evidence_ids",
+        "rationale"
+      ],
+      "title": "Result",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "builder_execution_id": {
+      "minLength": 1,
+      "title": "Builder Execution Id",
+      "type": "string"
+    },
+    "request": {
+      "$ref": "#/$defs/Request"
+    },
+    "policy": {
+      "$ref": "#/$defs/Policy"
+    },
+    "primary": {
+      "$ref": "#/$defs/Result"
+    },
+    "secondary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Result"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "adjudication": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Result"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "hypothesis": {
+      "minLength": 1,
+      "title": "Hypothesis",
+      "type": "string"
+    },
+    "human_resolution": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HumanResolution"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "outcome": {
+      "$ref": "#/$defs/Outcome"
+    }
+  },
+  "required": [
+    "id",
+    "builder_execution_id",
+    "request",
+    "policy",
+    "primary",
+    "hypothesis",
+    "outcome"
+  ],
+  "title": "Round",
+  "type": "object"
+}

@@ -1,0 +1,7 @@
+services:
+  mesh2motion-app:
+    build: .
+    container_name: mesh2motion-app
+    ports:
+      - "3000:5173"
+    restart: unless-stopped

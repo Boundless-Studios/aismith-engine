@@ -1,0 +1,293 @@
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { type AnimationClip } from 'three'
+import { AnimationUtility } from './AnimationUtility.ts'
+import { type SkeletonType } from '../../enums/SkeletonType.ts'
+import { RigConfig } from '../../RigConfig.ts'
+import { type AnimationClipMetadata, type TransformedAnimationClipPair } from './interfaces/TransformedAnimationClipPair.ts'
+import { LoadError, NoAnimationsError } from './AnimationImportErrors.ts'
+
+export interface AnimationLoadProgress {
+  loaded: number
+  total: number
+  percentage: number
+  currentFile: string
+  currentFileProgress: number
+  currentFileLoaded: number
+  currentFileTotal: number
+  overallBytesLoaded: number
+  overallBytesTotal: number
+}
+
+export class AnimationLoader extends EventTarget {
+  private readonly gltf_loader: GLTFLoader = new GLTFLoader()
+  private animations_file_path: string = 'animations/'
+  private readonly file_progress_map = new Map<string, { loaded: number, total: number }>()
+  private completed_files: number = 0
+  private total_files: number = 0
+
+  private skeleton_type: SkeletonType | null = null
+
+  private create_default_metadata (): AnimationClipMetadata {
+    return {
+      source_type: 'default-library',
+      tags: []
+    }
+  }
+
+  /**
+   * Sets the base path for animation files
+   */
+  public set_animations_file_path (path: string): void {
+    this.animations_file_path = path
+  }
+
+  /**
+   * Loads all animations for the specified skeleton type
+   * @param skeleton_type The type of skeleton to load animations for
+   * @param skeleton_scale Scale factor to apply to position keyframes
+   * @returns Promise that resolves with the loaded animation clips
+   */
+  public async load_animations (
+    skeleton_type: SkeletonType,
+    skeleton_scale: number = 1.0
+  ): Promise<TransformedAnimationClipPair[]> {
+    this.skeleton_type = skeleton_type
+    const configured_animation_files = RigConfig.get_animation_file_paths(this.skeleton_type)
+    const file_paths = configured_animation_files.map(f => `${this.animations_file_path}${f}`)
+
+    if (file_paths.length === 0) {
+      throw new Error(`No animation files found for skeleton type: ${this.skeleton_type}`)
+    }
+
+    // Initialize progress tracking
+    this.file_progress_map.clear()
+    this.completed_files = 0
+    this.total_files = file_paths.length
+
+    // Initialize all files in progress map
+    file_paths.forEach(file_path => {
+      this.file_progress_map.set(file_path, { loaded: 0, total: 1 })
+    })
+
+    return await new Promise((resolve, reject) => {
+      const loaded_clips: TransformedAnimationClipPair[] = []
+      let completed_loads = 0
+      const total_loads = file_paths.length
+      let has_error = false
+
+      // Emit initial progress
+      this.emit_enhanced_progress('', 0, 1)
+
+      file_paths.forEach((file_path, index) => {
+        this.gltf_loader.load(
+          file_path,
+          (gltf: any) => {
+            if (has_error) return // Don't process if we already had an error
+
+            try {
+              // Mark file as completed
+              this.file_progress_map.set(file_path, { loaded: 1, total: 1 })
+              this.completed_files++
+
+              // Process the loaded animations
+              const processed_clips = this.process_loaded_animations(
+                gltf.animations as AnimationClip[],
+                skeleton_scale,
+                {
+                  source_type: 'default-library',
+                  tags: []
+                }
+              )
+              loaded_clips.push(...processed_clips)
+
+              completed_loads++
+
+              // Emit progress update
+              this.emit_enhanced_progress(file_path, 1, 1)
+
+              // Check if all animations are loaded
+              if (completed_loads === total_loads) {
+                // Sort animations alphabetically by name
+                loaded_clips.sort((a, b) => {
+                  return a.display_animation_clip.name.localeCompare(b.display_animation_clip.name)
+                })
+
+                resolve(loaded_clips)
+              }
+            } catch (error) {
+              if (!has_error) {
+                has_error = true
+                const error_message = error instanceof Error ? error.message : String(error)
+                reject(new Error(`Failed to process animations from ${file_path}: ${error_message}`))
+              }
+            }
+          },
+          (progress_event) => {
+            // Enhanced progress tracking during file loading
+            if (progress_event.lengthComputable) {
+              const current_progress = { loaded: progress_event.loaded, total: progress_event.total }
+              this.file_progress_map.set(file_path, current_progress)
+
+              // Emit real-time progress
+              this.emit_enhanced_progress(file_path, progress_event.loaded, progress_event.total)
+            }
+          },
+          (error) => {
+            if (!has_error) {
+              has_error = true
+              const error_message = error instanceof Error ? error.message : String(error)
+              reject(new Error(`Failed to load animation file ${file_path}: ${error_message}`))
+            }
+          }
+        )
+      })
+    })
+  }
+
+  /**
+   * Loads animations from a local GLB file and validates against target skeleton.
+   * @param file The GLB file to load
+   * @param skinned_meshes Target skinned meshes to validate against
+   * @param skeleton_scale Scale factor to apply to position keyframes
+   * @returns Promise that resolves with the loaded animation clips
+   * @throws {NoAnimationsError} If no animations found in file
+   * @throws {LoadError} If file cannot be loaded
+   */
+  public async load_animations_from_file (
+    file: File,
+    skeleton_scale: number = 1.0,
+    metadata_override: Partial<AnimationClipMetadata> = {}
+  ): Promise<TransformedAnimationClipPair[]> {
+    const file_url = URL.createObjectURL(file)
+    const file_total = file.size > 0 ? file.size : 1
+
+    this.file_progress_map.clear()
+    this.completed_files = 0
+    this.total_files = 1
+    this.file_progress_map.set(file.name, { loaded: 0, total: file_total })
+    this.emit_enhanced_progress(file.name, 0, file_total)
+
+    return await new Promise((resolve, reject) => {
+      this.gltf_loader.load(
+        file_url,
+        (gltf: any) => {
+          URL.revokeObjectURL(file_url)
+
+          try {
+            const animations = gltf.animations as AnimationClip[]
+            if (animations === null || animations === undefined || animations.length === 0) {
+              this.file_progress_map.set(file.name, { loaded: file_total, total: file_total })
+              this.completed_files = 1
+              this.emit_enhanced_progress(file.name, file_total, file_total)
+              throw new NoAnimationsError('No animations found in the GLB file.')
+            }
+
+            this.file_progress_map.set(file.name, { loaded: file_total, total: file_total })
+            this.completed_files = 1
+            this.emit_enhanced_progress(file.name, file_total, file_total)
+
+            const processed_clips = this.process_loaded_animations(
+              animations,
+              skeleton_scale,
+              metadata_override
+            )
+            resolve(processed_clips)
+          } catch (error) {
+            // Emit final progress to hide the loader UI
+            this.file_progress_map.set(file.name, { loaded: file_total, total: file_total })
+            this.completed_files = 1
+            this.emit_enhanced_progress(file.name, file_total, file_total)
+
+            const error_message = error instanceof Error ? error.message : String(error)
+            if (error instanceof NoAnimationsError) {
+              reject(error)
+            } else {
+              reject(new LoadError(`Failed to process animations from ${file.name}: ${error_message}`))
+            }
+          }
+        },
+        (progress_event) => {
+          if (progress_event.lengthComputable) {
+            const total_bytes = progress_event.total > 0 ? progress_event.total : file_total
+            this.file_progress_map.set(file.name, { loaded: progress_event.loaded, total: total_bytes })
+            this.emit_enhanced_progress(file.name, progress_event.loaded, total_bytes)
+          }
+        },
+        (error) => {
+          URL.revokeObjectURL(file_url)
+          const error_message = error instanceof Error ? error.message : String(error)
+          reject(new LoadError(`Failed to load animation file ${file.name}: ${error_message}`))
+        }
+      )
+    })
+  }
+
+  /**
+   * Processes raw animation clips from GLTF file
+   */
+  public process_loaded_animations (
+    raw_animations: AnimationClip[],
+    skeleton_scale: number,
+    metadata_override: Partial<AnimationClipMetadata> = {}
+  ): TransformedAnimationClipPair[] {
+    // Deep clone the animations to avoid modifying originals
+    const cloned_animations = AnimationUtility.deep_clone_animation_clips(raw_animations)
+
+    // Clean track data (remove position tracks except for specific cases)
+    AnimationUtility.clean_track_data(cloned_animations, this.skeleton_type)
+
+    // Apply skeleton scaling to position keyframes
+    AnimationUtility.apply_skeleton_scale_to_position_keyframes(cloned_animations, skeleton_scale)
+
+    // Create the transformed pairs
+    return cloned_animations.map(clip => ({
+      original_animation_clip: clip,
+      display_animation_clip: AnimationUtility.deep_clone_animation_clip(clip),
+      metadata: {
+        ...this.create_default_metadata(),
+        ...metadata_override
+      }
+    }))
+  }
+
+  /**
+   * Emits enhanced progress event to listeners
+   */
+  private emit_enhanced_progress (current_file: string, file_loaded: number, file_total: number): void {
+    // Calculate overall progress across all files
+    let total_bytes_loaded = 0
+    let total_bytes_total = 0
+    let files_in_progress = 0
+
+    this.file_progress_map.forEach((progress, file_path) => {
+      total_bytes_loaded += progress.loaded
+      total_bytes_total += progress.total
+      if (progress.loaded < progress.total) {
+        files_in_progress++
+      }
+    })
+
+    // Calculate percentages
+    const current_file_percentage = file_total > 0 ? Math.round((file_loaded / file_total) * 100) : 0
+
+    // Calculate file-based progress (completed files vs total files)
+    const file_based_percentage = this.total_files > 0
+      ? Math.round(((this.completed_files + (files_in_progress > 0 ? 0.5 : 0)) / this.total_files) * 100)
+      : 0
+
+    // send the current animation loading progress data to listener to handle
+    const progress: AnimationLoadProgress = {
+      loaded: this.completed_files,
+      total: this.total_files,
+      percentage: file_based_percentage,
+      currentFile: current_file,
+      currentFileProgress: current_file_percentage,
+      currentFileLoaded: file_loaded,
+      currentFileTotal: file_total,
+      overallBytesLoaded: total_bytes_loaded,
+      overallBytesTotal: total_bytes_total
+    }
+
+    this.dispatchEvent(new CustomEvent('progress', { detail: progress }))
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "$defs": {
+    "Identity": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "prompt_version": {
+          "minLength": 1,
+          "title": "Prompt Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "version",
+        "prompt_version"
+      ],
+      "title": "Identity",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "primary": {
+      "$ref": "#/$defs/Identity"
+    },
+    "secondary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Identity"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "adjudicator": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Identity"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "min_confidence": {
+      "default": 0.7,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Min Confidence",
+      "type": "number"
+    },
+    "score_disagreement": {
+      "default": 0.2,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Score Disagreement",
+      "type": "number"
+    },
+    "plateau_window": {
+      "default": 3,
+      "minimum": 3,
+      "title": "Plateau Window",
+      "type": "integer"
+    },
+    "plateau_epsilon": {
+      "default": 0.05,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Plateau Epsilon",
+      "type": "number"
+    },
+    "persistence_window": {
+      "default": 3,
+      "minimum": 2,
+      "title": "Persistence Window",
+      "type": "integer"
+    },
+    "max_rounds": {
+      "default": 8,
+      "minimum": 3,
+      "title": "Max Rounds",
+      "type": "integer"
+    },
+    "adversarial_after": {
+      "default": 2,
+      "minimum": 2,
+      "title": "Adversarial After",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "primary"
+  ],
+  "title": "Policy",
+  "type": "object"
+}

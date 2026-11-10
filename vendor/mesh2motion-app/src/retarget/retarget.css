@@ -1,0 +1,198 @@
+h1 {
+    font-size: 1.7rem;
+}
+
+.bone-map-section {
+    display: inline-flex; 
+    flex-direction: column;
+    border: 1px solid var(--bg-tertiary);
+    padding: 0;
+}
+
+.bone-map-heading {
+    display: inline-block;
+    color: var(--text-primary);
+    margin: 0;
+    padding: 1rem;
+    background: var(--bg-alternate);
+    margin-bottom: 1rem;
+}
+
+.bone-map-content {
+    padding: 1rem;
+    padding-top: 0;
+}
+
+#source-bones-list, #target-bones-list {
+    height: calc(100vh - 490px); /* Hard-code the height to keep the UI consistent when filtering the lists */
+    overflow-y: auto;
+    background-color: var(--bg-alternate);
+    border-radius: 0.25rem;
+}
+
+/* Custom scrollbar styling */
+#source-bones-list::-webkit-scrollbar,
+#target-bones-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+#source-bones-list::-webkit-scrollbar-track,
+#target-bones-list::-webkit-scrollbar-track {
+    background: var(--bg-alternate);
+    border-radius: 0.25rem;
+}
+
+#source-bones-list::-webkit-scrollbar-thumb,
+#target-bones-list::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 0.25rem;
+    opacity: 0.5;
+}
+
+#source-bones-list::-webkit-scrollbar-thumb:hover,
+#target-bones-list::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+
+/* Firefox scrollbar styling */
+#source-bones-list,
+#target-bones-list {
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-secondary) var(--bg-alternate);
+}
+
+
+/* Bone mapping list item styles with drag and drop styles */
+.bone-item {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--bg-tertiary)
+}
+
+.bone-item-source {
+    cursor: grab;
+    user-select: none;
+    display: flex;
+    align-items: center;
+}
+
+.bone-item-source::before {
+    content: '⋮⋮';
+    margin-right: 0.5rem;
+    color: var(--text-secondary);
+    font-weight: bold;
+    opacity: 0.6;
+    line-height: 1;
+}
+
+.bone-item-source:hover::before {
+    opacity: 1;
+    color: var(--primary-color);
+}
+
+.bone-item-source.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.bone-item-target {
+    min-height: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.bone-item-target.drag-over {
+    background-color: var(--bg-tertiary);
+    border: 1px dashed var(--primary-color);
+}
+
+.mapping-source-name {
+    color: var(--bg-primary);
+    background: var(--text-alternate);
+    padding: 0.25rem 0.5rem;
+    border-radius: 5px;
+}
+
+#animations-items {
+    max-height: calc(100vh - 17rem);
+}
+
+#auto-bone-map-match {
+    font-size: 0.9rem;
+    border: 3px solid var(--bg-tertiary);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    display: none;
+}
+
+#no-bone-mapping-needed-message {
+    max-width: 13rem;
+    margin-top: 2rem;
+    font-style: italic;
+}
+
+
+
+/* Bone tree view */
+
+.bone-tree-dialog-summary {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.bone-tree-dialog-list,
+.bone-tree-dialog-list ul {
+    list-style: none;
+    margin: 0;
+    padding-left: 0.8rem;
+}
+
+.bone-tree-dialog-list {
+    padding-left: 0;
+}
+
+.bone-tree-dialog-list ul {
+    margin-left: 0.7rem;
+    border-left: 2px solid var(--bg-tertiary);
+}
+
+.bone-tree-dialog-list li {
+    margin: 0.2rem 0;
+}
+
+.bone-tree-node-name {
+    padding: 0.2rem 0.4rem;
+}
+
+#view-bone-tree-button {
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+}
+#view-bone-tree-button:hover {
+    opacity: 1;
+}
+#target-model-load-status {
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #5b4bb7;
+  border-radius: 0.4rem;
+  background: #171528;
+  color: #d8d2ff;
+  font-size: 0.9rem;
+}
+
+#target-model-load-status[data-state="ready"] {
+  border-color: #2d7a61;
+  background: #10231d;
+  color: #a7e4cf;
+}
+
+#target-model-load-status[data-state="failed"] {
+  border-color: #9d3d52;
+  background: #2a141a;
+  color: #ffc0cc;
+}

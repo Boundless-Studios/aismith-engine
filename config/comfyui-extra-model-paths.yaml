@@ -1,0 +1,7 @@
+# Example ComfyUI extra_model_paths.yaml for the image-preparation workflows.
+# Point base_path at the directory that holds your ComfyUI model folders.
+aismith_models:
+  base_path: /srv/aismith/models/ComfyUI
+  diffusion_models: diffusion_models
+  text_encoders: text_encoders
+  vae: vae

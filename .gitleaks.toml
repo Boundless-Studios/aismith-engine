@@ -1,0 +1,16 @@
+# gitleaks configuration: the default rules, plus reviewed false positives.
+# Each allowlist entry is as narrow as the finding allows. Never add a real
+# secret here; rotate it and remove it from history instead.
+title = "aismith-engine"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "blender_worker.py passes a mask variable by keyword; generic-api-key reads the name as a key"
+regexTarget = "line"
+regexes = ['''keyed_subject_mask, radius=SUBJECT_MASK_EROD''']
+
+[[allowlists]]
+description = "Upstream ggml CI in the vendored trellis2cpp tree: actions/cache keys, not secrets"
+paths = ['''(^|/)vendor/trellis2cpp/ggml/\.github/workflows/ci\.yml$''']
